@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -95,13 +94,13 @@ func transform(section *section, indent int, aliases aliases) ([]byte, error) {
 			optionalRulePadding = indent
 			padding = indent
 		case gherkin.TokenTypeComment, gherkin.TokenTypeLanguage:
-			cmd = extractCommand(sec.values, aliases)
 			padding = getTagOrCommentPadding(paddings, indent, sec)
 			lines = trimLinesSpace(lines)
 		case gherkin.TokenTypeTagLine:
 			padding = getTagOrCommentPadding(paddings, indent, sec)
 		case gherkin.TokenTypeDocStringSeparator:
-			lines = extractKeyword(sec.values)
+			lines = extractDocStringSeparator(sec.values)
+			cmd = extractCommand(sec.values[0].Text, aliases)
 		case gherkin.TokenTypeOther:
 			if isDescriptionFeature(sec) {
 				lines = trimLinesSpace(lines)
@@ -149,7 +148,7 @@ func getTagOrCommentPadding(paddings map[gherkin.TokenType]int, indent int, sec 
 }
 
 func computeCommand(cmd *exec.Cmd, lines []string, sec *section) (bool, []string, error) {
-	if sec.kind == gherkin.TokenTypeComment || sec.kind == gherkin.TokenTypeDocStringSeparator || cmd == nil {
+	if sec.kind == gherkin.TokenTypeDocStringSeparator || cmd == nil {
 		return false, lines, nil
 	}
 	l, err := runCommand(cmd, lines)
@@ -251,6 +250,14 @@ func extractKeyword(tokens []*gherkin.Token) []string {
 	return content
 }
 
+func extractDocStringSeparator(tokens []*gherkin.Token) []string {
+	content := []string{}
+	for _, t := range tokens {
+		content = append(content, t.Keyword+t.Text)
+	}
+	return content
+}
+
 func extractTableRowsAndComments(tokens []*gherkin.Token) []string {
 	type tableElement struct {
 		content []string
@@ -320,14 +327,12 @@ func calculateLonguestLineLengthPerColumn(rows [][]string) []int {
 	return lengths
 }
 
-func extractCommand(tokens []*gherkin.Token, aliases map[string]string) *exec.Cmd {
-	re := regexp.MustCompile(`(\@[a-zA-Z0-9]+)`)
-	matches := re.FindStringSubmatch(tokens[0].Text)
-	if len(matches) == 0 {
+func extractCommand(text string, aliases map[string]string) *exec.Cmd {
+	if text == "" {
 		return nil
 	}
 	/* #nosec */
-	if cmd, ok := aliases[matches[0][1:]]; ok {
+	if cmd, ok := aliases[text]; ok {
 		return exec.Command("sh", "-c", cmd)
 	}
 	return nil

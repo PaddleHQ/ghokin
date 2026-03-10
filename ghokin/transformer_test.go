@@ -133,8 +133,8 @@ func TestExtractTableRows(t *testing.T) {
 
 func TestExtractCommand(t *testing.T) {
 	type scenario struct {
-		tokens []*gherkin.Token
-		test   func(*exec.Cmd)
+		text string
+		test func(*exec.Cmd)
 	}
 
 	aliases := map[string]string{
@@ -144,25 +144,19 @@ func TestExtractCommand(t *testing.T) {
 
 	scenarios := []scenario{
 		{
-			[]*gherkin.Token{{
-				Text: "",
-			}},
+			"",
 			func(cmd *exec.Cmd) {
 				assert.Nil(t, cmd)
 			},
 		},
 		{
-			[]*gherkin.Token{{
-				Text: "# A comment",
-			}},
+			"unknown",
 			func(cmd *exec.Cmd) {
 				assert.Nil(t, cmd)
 			},
 		},
 		{
-			[]*gherkin.Token{{
-				Text: "# @jq",
-			}},
+			"jq",
 			func(cmd *exec.Cmd) {
 				expected := exec.Command("sh", "-c", "jq")
 
@@ -172,7 +166,7 @@ func TestExtractCommand(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scenario.test(extractCommand(scenario.tokens, aliases))
+		scenario.test(extractCommand(scenario.text, aliases))
 	}
 }
 
@@ -410,7 +404,6 @@ func TestTransform(t *testing.T) {
 			"fixtures/file1.feature",
 			"fixtures/file1.feature",
 		},
-
 		{
 			"fixtures/cmd.input.feature",
 			"fixtures/cmd.expected.feature",

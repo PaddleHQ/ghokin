@@ -11,8 +11,7 @@ Feature: A Feature
     # A second comment
     Given some background
     Given some datas
-      # @seq
-      """
+      """seq
       1
       2
       3

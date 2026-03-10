@@ -3,8 +3,7 @@ Feature: A Feature
 
   Scenario: A scenario to test
     Given a thing
-      # @abcdefg
-      """
+      """abcdefg
       1
       2
       3
