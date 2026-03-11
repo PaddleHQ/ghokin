@@ -1,4 +1,4 @@
-module github.com/antham/ghokin/v3
+module github.com/PaddleHQ/ghokin/v4
 
 require (
 	github.com/cucumber/gherkin/go/v28 v28.0.0

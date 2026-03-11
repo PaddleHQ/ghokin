@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/antham/ghokin/v3/ghokin/internal/transformer"
+	"github.com/PaddleHQ/ghokin/v4/ghokin/internal/transformer"
 	"github.com/saintfish/chardet"
 	"golang.org/x/net/html/charset"
 )

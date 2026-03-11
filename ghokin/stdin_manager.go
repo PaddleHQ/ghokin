@@ -3,7 +3,7 @@ package ghokin
 import (
 	"io"
 
-	"github.com/antham/ghokin/v3/ghokin/internal/transformer"
+	"github.com/PaddleHQ/ghokin/v4/ghokin/internal/transformer"
 )
 
 // StdinManager handles transformation from stdin
