@@ -1,6 +1,7 @@
 package ghokin
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -25,7 +26,7 @@ func NewStdinManager(indent int, aliases map[string]string) StdinManager {
 }
 
 // Transform formats and applies shell commands on stdin.
-func (s StdinManager) Transform(reader io.Reader) ([]byte, error) {
+func (s StdinManager) Transform(ctx context.Context, reader io.Reader) ([]byte, error) {
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		return []byte{}, fmt.Errorf("%w: %w", errReadStdin, err)
@@ -37,7 +38,7 @@ func (s StdinManager) Transform(reader io.Reader) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	content, err = transform(section, s.indent, s.aliases)
+	content, err = transform(ctx, section, s.indent, s.aliases)
 	if err != nil {
 		return []byte{}, err
 	}

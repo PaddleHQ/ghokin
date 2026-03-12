@@ -154,7 +154,7 @@ var formats = map[gherkin.TokenType]func(values []*gherkin.Token) []string{
 	gherkin.TokenTypeLanguage:           extractLanguage,
 }
 
-func transform(sec *section, indent int, aliases aliases) ([]byte, error) {
+func transform(ctx context.Context, sec *section, indent int, aliases aliases) ([]byte, error) {
 	paddings := buildPaddings(indent)
 
 	var cmd *exec.Cmd
@@ -189,7 +189,7 @@ func transform(sec *section, indent int, aliases aliases) ([]byte, error) {
 			newCmd  *exec.Cmd
 		)
 		padding, lines, newCmd, optionalRulePadding = applySectionKind(
-			sec, paddings, indent, optionalRulePadding, aliases, lines,
+			ctx, sec, paddings, indent, optionalRulePadding, aliases, lines,
 		)
 		if newCmd != nil {
 			cmd = newCmd
@@ -209,6 +209,7 @@ func transform(sec *section, indent int, aliases aliases) ([]byte, error) {
 }
 
 func applySectionKind(
+	ctx context.Context,
 	sec *section,
 	paddings map[gherkin.TokenType]int,
 	indent int,
@@ -225,7 +226,7 @@ func applySectionKind(
 		newOptionalRulePadding = indent
 		padding = indent
 	case gherkin.TokenTypeComment, gherkin.TokenTypeLanguage:
-		cmd = extractCommand(sec.values, aliases)
+		cmd = extractCommand(ctx, sec.values, aliases)
 		padding = getTagOrCommentPadding(paddings, indent, sec)
 		result = trimLinesSpace(lines)
 	case gherkin.TokenTypeTagLine:
@@ -452,14 +453,14 @@ func calculateLonguestLineLengthPerColumn(rows [][]string) []int {
 	return lengths
 }
 
-func extractCommand(tokens []*gherkin.Token, aliases map[string]string) *exec.Cmd {
+func extractCommand(ctx context.Context, tokens []*gherkin.Token, aliases map[string]string) *exec.Cmd {
 	re := regexp.MustCompile(`(@[a-zA-Z0-9]+)`)
 	matches := re.FindStringSubmatch(tokens[0].Text)
 	if len(matches) == 0 {
 		return nil
 	}
 	if cmd, ok := aliases[matches[0][1:]]; ok {
-		return exec.CommandContext(context.Background(), "sh", "-c", cmd) //nolint:gosec // aliases are user-defined.
+		return exec.CommandContext(ctx, "sh", "-c", cmd) //nolint:gosec // aliases are user-defined.
 	}
 	return nil
 }

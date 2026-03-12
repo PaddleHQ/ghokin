@@ -81,7 +81,7 @@ func TestFileManagerTransform(t *testing.T) {
 					"seq": "seq 1 3",
 				},
 			)
-			scenario.test(f.Transform(scenario.filename))
+			scenario.test(f.Transform(t.Context(), scenario.filename))
 		})
 	}
 }
@@ -373,7 +373,7 @@ hello world
 					"seq": "seq 1 3",
 				},
 			)
-			scenario.test(f.TransformAndReplace(scenario.path, scenario.extensions))
+			scenario.test(f.TransformAndReplace(t.Context(), scenario.path, scenario.extensions))
 		})
 	}
 }
@@ -671,7 +671,7 @@ hello world
 				},
 			)
 
-			scenario.test(f.Check(scenario.path, scenario.extensions))
+			scenario.test(f.Check(t.Context(), scenario.path, scenario.extensions))
 		})
 	}
 }

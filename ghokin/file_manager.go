@@ -3,6 +3,7 @@ package ghokin
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -54,7 +55,7 @@ func NewFileManager(indent int, aliases map[string]string) FileManager {
 }
 
 // Transform formats and applies shell commands on feature file.
-func (f FileManager) Transform(filename string) ([]byte, error) {
+func (f FileManager) Transform(ctx context.Context, filename string) ([]byte, error) {
 	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		return []byte{}, fmt.Errorf("%w: %w", errReadFile, err)
@@ -81,7 +82,7 @@ func (f FileManager) Transform(filename string) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	content, err = transform(section, f.indent, f.aliases)
+	content, err = transform(ctx, section, f.indent, f.aliases)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -90,16 +91,21 @@ func (f FileManager) Transform(filename string) ([]byte, error) {
 
 // TransformAndReplace formats and applies shell commands on file or folder
 // and replace the content of files.
-func (f FileManager) TransformAndReplace(path string, extensions []string) []error {
-	return f.process(path, extensions, replaceFileWithContent)
+func (f FileManager) TransformAndReplace(ctx context.Context, path string, extensions []string) []error {
+	return f.process(ctx, path, extensions, replaceFileWithContent)
 }
 
 // Check ensures file or folder is well formatted.
-func (f FileManager) Check(path string, extensions []string) []error {
-	return f.process(path, extensions, check)
+func (f FileManager) Check(ctx context.Context, path string, extensions []string) []error {
+	return f.process(ctx, path, extensions, check)
 }
 
-func (f FileManager) process(path string, extensions []string, processFile func(file string, content []byte) error) []error {
+func (f FileManager) process(
+	ctx context.Context,
+	path string,
+	extensions []string,
+	processFile func(file string, content []byte) error,
+) []error {
 	errors := []error{}
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -108,9 +114,9 @@ func (f FileManager) process(path string, extensions []string, processFile func(
 
 	switch mode := fi.Mode(); {
 	case mode.IsDir():
-		errors = append(errors, f.processPath(path, extensions, processFile)...)
+		errors = append(errors, f.processPath(ctx, path, extensions, processFile)...)
 	case mode.IsRegular():
-		b, err := f.Transform(path)
+		b, err := f.Transform(ctx, path)
 		if err != nil {
 			return append(errors, err)
 		}
@@ -121,7 +127,12 @@ func (f FileManager) process(path string, extensions []string, processFile func(
 	return errors
 }
 
-func (f FileManager) processPath(path string, extensions []string, processFile func(file string, content []byte) error) []error {
+func (f FileManager) processPath(
+	ctx context.Context,
+	path string,
+	extensions []string,
+	processFile func(file string, content []byte) error,
+) []error {
 	errors := []error{}
 	fc := make(chan string)
 	wg := sync.WaitGroup{}
@@ -136,10 +147,9 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 	}
 
 	for range 10 {
-
 		wg.Go(func() {
 			for file := range fc {
-				b, err := f.Transform(file)
+				b, err := f.Transform(ctx, file)
 				if err != nil {
 					mu.Lock()
 					errors = append(errors, ProcessFileError{Message: err.Error(), File: file})
