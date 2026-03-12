@@ -1,3 +1,4 @@
+// Package ghokin provides formatting and transformation for Gherkin feature files.
 package ghokin
 
 import (
@@ -15,6 +16,15 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
+// sentinel errors for file operations.
+var (
+	errReadFile      = fmt.Errorf("failed to read file")
+	errDetectCharset = fmt.Errorf("failed to detect charset")
+	errNewReader     = fmt.Errorf("failed to create charset reader")
+	errReadContent   = fmt.Errorf("failed to read content")
+	errWalkPath      = fmt.Errorf("failed to walk path")
+)
+
 // ProcessFileError is emitted when processing a file trigger an error.
 type ProcessFileError struct {
 	Message string
@@ -23,7 +33,7 @@ type ProcessFileError struct {
 
 // Error dumps a string error.
 func (p ProcessFileError) Error() string {
-	return fmt.Sprintf(`an error occurred with file "%s" : %s`, p.File, p.Message)
+	return fmt.Sprintf("an error occurred with file %q : %s", p.File, p.Message)
 }
 
 type aliases map[string]string
@@ -45,23 +55,23 @@ func NewFileManager(indent int, aliases map[string]string) FileManager {
 
 // Transform formats and applies shell commands on feature file.
 func (f FileManager) Transform(filename string) ([]byte, error) {
-	content, err := os.ReadFile(filename)
+	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, fmt.Errorf("%w: %w", errReadFile, err)
 	}
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(content)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, fmt.Errorf("%w: %w", errDetectCharset, err)
 	}
 	if result.Charset != "UTF-8" {
 		r, err := charset.NewReaderLabel(result.Charset, bytes.NewBuffer(content))
 		if err != nil {
-			return []byte{}, err
+			return []byte{}, fmt.Errorf("%w: %w", errNewReader, err)
 		}
 		content, err = io.ReadAll(r)
 		if err != nil {
-			return []byte{}, err
+			return []byte{}, fmt.Errorf("%w: %w", errReadContent, err)
 		}
 	}
 	contentTransformer := &transformer.ContentTransformer{}
@@ -158,7 +168,7 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 }
 
 func replaceFileWithContent(file string, content []byte) error {
-	f, err := os.Create(file)
+	f, err := os.Create(filepath.Clean(file))
 	if err != nil {
 		return ProcessFileError{Message: err.Error(), File: file}
 	}
@@ -199,7 +209,7 @@ func findFeatureFiles(rootPath string, extensions []string) ([]string, error) {
 
 		return nil
 	}); err != nil {
-		return []string{}, err
+		return []string{}, fmt.Errorf("%w: %w", errWalkPath, err)
 	}
 
 	return files, nil

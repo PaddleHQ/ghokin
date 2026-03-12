@@ -9,10 +9,9 @@ import (
 	"github.com/fatih/color"
 )
 
-func failOnFprintError(c int, err error) {
+func failOnFprintError(_ int, err error) {
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 }
 

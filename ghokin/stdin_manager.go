@@ -1,10 +1,13 @@
 package ghokin
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/PaddleHQ/ghokin/v4/ghokin/internal/transformer"
 )
+
+var errReadStdin = fmt.Errorf("failed to read stdin")
 
 // StdinManager handles transformation from stdin.
 type StdinManager struct {
@@ -25,7 +28,7 @@ func NewStdinManager(indent int, aliases map[string]string) StdinManager {
 func (s StdinManager) Transform(reader io.Reader) ([]byte, error) {
 	content, err := io.ReadAll(reader)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, fmt.Errorf("%w: %w", errReadStdin, err)
 	}
 	contentTransformer := &transformer.ContentTransformer{}
 	contentTransformer.DetectSettings(content)

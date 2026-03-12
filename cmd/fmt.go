@@ -10,7 +10,7 @@ var fmtCmd = &cobra.Command{
 	Run:   setupCmdFunc(format),
 }
 
-func format(msgHandler messageHandler, cmd *cobra.Command, args []string) {
+func format(msgHandler messageHandler, cmd *cobra.Command, _ []string) {
 	if err := cmd.Help(); err != nil {
 		msgHandler.errorFatal(err)
 	}

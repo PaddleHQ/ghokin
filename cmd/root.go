@@ -63,8 +63,7 @@ func initConfig(msgHandler messageHandler) func() {
 		viper.SetDefault("aliases", aliases)
 
 		if err := viper.ReadInConfig(); err != nil {
-			switch err.(type) {
-			case viper.ConfigParseError:
+			if _, ok := err.(viper.ConfigParseError); ok {
 				msgHandler.errorFatalStr("check your yaml config file is well-formed : " + err.Error())
 			}
 		}

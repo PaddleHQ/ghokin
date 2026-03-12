@@ -1,3 +1,4 @@
+// Package transformer provides content transformation utilities for gherkin parsing.
 package transformer
 
 import "bytes"

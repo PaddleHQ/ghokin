@@ -1,9 +1,11 @@
-package ghokin
+package ghokin_test
 
 import (
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/PaddleHQ/ghokin/v4/ghokin"
 
 	gherkin "github.com/cucumber/gherkin/go/v28"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +22,7 @@ func TestIndentStrings(t *testing.T) {
 		"    world",
 	}
 
-	assert.Equal(t, expected, indentStrings(4, datas))
+	assert.Equal(t, expected, ghokin.ExportIndentStrings(4, datas))
 }
 
 func TestExtractTokensText(t *testing.T) {
@@ -35,7 +37,7 @@ func TestExtractTokensText(t *testing.T) {
 
 	expected := []string{"test1", "test2"}
 
-	assert.Equal(t, expected, extractTokensText(tokens))
+	assert.Equal(t, expected, ghokin.ExportExtractTokensText(tokens))
 }
 
 func TestExtractTokensItemsText(t *testing.T) {
@@ -56,7 +58,7 @@ func TestExtractTokensItemsText(t *testing.T) {
 
 	expected := []string{"@test1 @test2", "@test3 @test4"}
 
-	assert.Equal(t, expected, extractTokensItemsText(tokens))
+	assert.Equal(t, expected, ghokin.ExportExtractTokensItemsText(tokens))
 }
 
 func TestExtractTokensKeywordAndText(t *testing.T) {
@@ -70,21 +72,21 @@ func TestExtractTokensKeywordAndText(t *testing.T) {
 		"Then we do something",
 	}
 
-	assert.Equal(t, expected, extractTokensKeywordAndText(tokens))
+	assert.Equal(t, expected, ghokin.ExportExtractTokensKeywordAndText(tokens))
 }
 
 func TestExtractKeywordAndTextSeparatedWithAColon(t *testing.T) {
 	tokens := []*gherkin.Token{{Keyword: "Feature", Text: "Set api"}}
 	expected := []string{"Feature: Set api"}
 
-	assert.Equal(t, expected, extractKeywordAndTextSeparatedWithAColon(tokens))
+	assert.Equal(t, expected, ghokin.ExportExtractKeywordAndTextSeparatedWithAColon(tokens))
 }
 
 func TestExtractKeyword(t *testing.T) {
 	tokens := []*gherkin.Token{{Keyword: `"""`}}
 	expected := []string{`"""`}
 
-	assert.Equal(t, expected, extractKeyword(tokens))
+	assert.Equal(t, expected, ghokin.ExportExtractKeyword(tokens))
 }
 
 func TestExtractTableRows(t *testing.T) {
@@ -127,7 +129,7 @@ func TestExtractTableRows(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scenario.test(extractTableRowsAndComments(scenario.tokens))
+		scenario.test(ghokin.ExportExtractTableRowsAndComments(scenario.tokens))
 	}
 }
 
@@ -164,15 +166,14 @@ func TestExtractCommand(t *testing.T) {
 				Text: "# @jq",
 			}},
 			func(cmd *exec.Cmd) {
-				expected := exec.Command("sh", "-c", "jq")
-
-				assert.Equal(t, expected, cmd)
+				assert.NotNil(t, cmd)
+				assert.Equal(t, []string{"sh", "-c", "jq"}, cmd.Args)
 			},
 		},
 	}
 
 	for _, scenario := range scenarios {
-		scenario.test(extractCommand(scenario.tokens, aliases))
+		scenario.test(ghokin.ExportExtractCommand(scenario.tokens, aliases))
 	}
 }
 
@@ -190,7 +191,7 @@ func TestTrimLinesSpace(t *testing.T) {
 		"world",
 	}
 
-	assert.Equal(t, expected, trimLinesSpace(datas))
+	assert.Equal(t, expected, ghokin.ExportTrimLinesSpace(datas))
 }
 
 func TestRunCommand(t *testing.T) {
@@ -210,7 +211,7 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			exec.Command("sh", "-c", "cat"),
+			ghokin.NewCommandForTest("sh", "-c", "cat"),
 			[]string{"hello world !", "hello universe !"},
 			func(lines []string, err error) {
 				assert.Equal(t, []string{"hello world !", "hello universe !"}, lines)
@@ -218,7 +219,7 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			exec.Command("sh", "-c", "catttttt"),
+			ghokin.NewCommandForTest("sh", "-c", "catttttt"),
 			[]string{"hello world !", "hello universe !"},
 			func(lines []string, err error) {
 				assert.Equal(t, []string{}, lines)
@@ -228,26 +229,29 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scenario.test(runCommand(scenario.cmd, scenario.lines))
+		scenario.test(ghokin.ExportRunCommand(scenario.cmd, scenario.lines))
 	}
 }
 
 func TestExtractSections(t *testing.T) {
 	type scenario struct {
 		filename string
-		test     func(*section, error)
+		test     func(*ghokin.ExportSection, error)
 	}
 
 	scenarios := []scenario{
 		{
 			"fixtures/file.txt",
-			func(section *section, err error) {
-				assert.EqualError(t, err, "Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whatever'")
+			func(_ *ghokin.ExportSection, err error) {
+				assert.ErrorContains(
+					t, err,
+					"Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whatever'",
+				)
 			},
 		},
 		{
 			"fixtures/feature.feature",
-			func(sec *section, err error) {
+			func(sec *ghokin.ExportSection, err error) {
 				type test struct {
 					previousName string
 					currentName  string
@@ -256,7 +260,7 @@ func TestExtractSections(t *testing.T) {
 				}
 
 				assert.NoError(t, err)
-				assert.Equal(t, "", sec.kind.Name())
+				assert.Empty(t, ghokin.SectionKindName(sec))
 
 				ts := []test{
 					{
@@ -369,24 +373,31 @@ func TestExtractSections(t *testing.T) {
 					},
 				}
 
-				sec = sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty})
+				emptyExcl := []gherkin.TokenType{gherkin.TokenTypeEmpty}
+				sec = ghokin.SectionNext(sec, emptyExcl)
 
 				for i := 0; i < len(ts); i++ {
-					assert.Equal(t, sec.previous([]gherkin.TokenType{gherkin.TokenTypeEmpty}).kind.Name(), ts[i].previousName)
-					assert.Equal(t, sec.kind.Name(), ts[i].currentName)
+					prev := ghokin.SectionPrevious(sec, emptyExcl)
+					assert.Equal(t, ghokin.SectionKindName(prev), ts[i].previousName)
+					assert.Equal(t, ghokin.SectionKindName(sec), ts[i].currentName)
 
 					if i == len(ts)-1 {
-						assert.Equal(t, (*section)(nil), sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty}))
+						assert.Equal(
+							t,
+							(*ghokin.ExportSection)(nil),
+							ghokin.SectionNext(sec, emptyExcl),
+						)
 					} else {
-						assert.Equal(t, sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty}).kind.Name(), ts[i].nextName)
+						nxt := ghokin.SectionNext(sec, emptyExcl)
+						assert.Equal(t, ghokin.SectionKindName(nxt), ts[i].nextName)
 					}
 
-					for j, v := range sec.values {
+					for j, v := range ghokin.SectionValues(sec) {
 						assert.Equal(t, ts[i].values[j]["keyword"], v.Keyword)
 						assert.Equal(t, ts[i].values[j]["text"], v.Text)
 					}
 
-					sec = sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty})
+					sec = ghokin.SectionNext(sec, emptyExcl)
 				}
 			},
 		},
@@ -395,7 +406,7 @@ func TestExtractSections(t *testing.T) {
 	for _, scenario := range scenarios {
 		content, err := os.ReadFile(scenario.filename)
 		assert.NoError(t, err)
-		scenario.test(extractSections(content))
+		scenario.test(ghokin.ExportExtractSections(content))
 	}
 }
 
@@ -483,14 +494,14 @@ func TestTransform(t *testing.T) {
 			t.Parallel()
 			content, err := os.ReadFile(scenario.input)
 			assert.NoError(t, err)
-			s, err := extractSections(content)
+			s, err := ghokin.ExportExtractSections(content)
 			assert.NoError(t, err)
 
 			aliases := map[string]string{
 				"seq": "seq 1 3",
 			}
 
-			buf, err := transform(s, 2, aliases)
+			buf, err := ghokin.ExportTransform(s, 2, aliases)
 			assert.NoError(t, err)
 
 			b, e := os.ReadFile(scenario.expected)

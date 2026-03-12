@@ -13,7 +13,7 @@ var versionCmd = &cobra.Command{
 	Run:   setupCmdFunc(version),
 }
 
-func version(msgHandler messageHandler, cmd *cobra.Command, args []string) {
+func version(msgHandler messageHandler, _ *cobra.Command, _ []string) {
 	msgHandler.success(appVersion)
 }
 

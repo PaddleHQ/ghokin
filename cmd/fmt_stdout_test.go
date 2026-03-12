@@ -1,10 +1,12 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/PaddleHQ/ghokin/v4/cmd"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,13 +21,13 @@ func TestFormatOnStdoutFromFile(t *testing.T) {
 
 	viper.Set("indent", 2)
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	w.Add(1)
 
@@ -38,10 +40,10 @@ func TestFormatOnStdoutFromFile(t *testing.T) {
 			w.Done()
 		}()
 
-		cmd := &cobra.Command{}
+		c := &cobra.Command{}
 		args := []string{"fixtures/feature.feature"}
 
-		formatOnStdout(msgHandler, cmd, args)
+		cmd.TestFormatOnStdout(msgHandler, c, args)
 	}()
 
 	w.Wait()
@@ -62,13 +64,13 @@ func TestFormatOnStdoutFromStdin(t *testing.T) {
 
 	viper.Set("indent", 2)
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	w.Add(1)
 
@@ -83,10 +85,10 @@ func TestFormatOnStdoutFromStdin(t *testing.T) {
 
 		content, err := os.ReadFile("fixtures/feature.feature")
 		assert.NoError(t, err)
-		cmd := &cobra.Command{}
+		c := &cobra.Command{}
 		args := []string{}
-		cmd.SetIn(bytes.NewBuffer(content))
-		formatOnStdout(msgHandler, cmd, args)
+		c.SetIn(bytes.NewBuffer(content))
+		cmd.TestFormatOnStdout(msgHandler, c, args)
 	}()
 
 	w.Wait()
@@ -105,13 +107,13 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	type scenario struct {
 		args   []string
@@ -121,7 +123,7 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 	scenarios := []scenario{
 		{
 			[]string{"fixtures/featurefeature.feature"},
-			"open fixtures/featurefeature.feature: no such file or directory\n",
+			"failed to read file: open fixtures/featurefeature.feature: no such file or directory\n",
 		},
 	}
 
@@ -137,9 +139,9 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 				w.Done()
 			}()
 
-			cmd := &cobra.Command{}
+			c := &cobra.Command{}
 
-			formatOnStdout(msgHandler, cmd, s.args)
+			cmd.TestFormatOnStdout(msgHandler, c, s.args)
 		}()
 
 		w.Wait()

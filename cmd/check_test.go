@@ -1,10 +1,12 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/PaddleHQ/ghokin/v4/cmd"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,13 +21,13 @@ func TestCheck(t *testing.T) {
 
 	viper.Set("indent", 2)
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	assert.NoError(t, os.RemoveAll("/tmp/ghokin"))
 	assert.NoError(t, os.MkdirAll("/tmp/ghokin", 0o777))
@@ -43,9 +45,9 @@ func TestCheck(t *testing.T) {
 			w.Done()
 		}()
 
-		cmd := &cobra.Command{}
+		c := &cobra.Command{}
 
-		check(msgHandler, cmd, []string{"/tmp/ghokin"})
+		cmd.TestCheck(msgHandler, c, []string{"/tmp/ghokin"})
 	}()
 
 	w.Wait()
@@ -60,13 +62,13 @@ func TestCheckErrors(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	type scenario struct {
 		args   []string
@@ -84,7 +86,7 @@ func TestCheckErrors(t *testing.T) {
 		},
 		{
 			[]string{"fixtures/file.txt"},
-			"Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'Whatever'\n",
+			"failed to parse gherkin: Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'Whatever'\n",
 		},
 	}
 
@@ -100,9 +102,9 @@ func TestCheckErrors(t *testing.T) {
 				w.Done()
 			}()
 
-			cmd := &cobra.Command{}
+			c := &cobra.Command{}
 
-			check(msgHandler, cmd, s.args)
+			cmd.TestCheck(msgHandler, c, s.args)
 		}()
 
 		w.Wait()
