@@ -2,6 +2,7 @@ package ghokin
 
 import (
 	"fmt"
+	"slices"
 
 	gherkin "github.com/cucumber/gherkin/go/v28"
 )
@@ -52,13 +53,7 @@ type section struct {
 }
 
 func (s *section) isExcluded(kind gherkin.TokenType, excluded []gherkin.TokenType) bool {
-	for _, e := range excluded {
-		if kind == e {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(excluded, kind)
 }
 
 func (s *section) previous(excluded []gherkin.TokenType) *section {

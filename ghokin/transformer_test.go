@@ -376,7 +376,7 @@ func TestExtractSections(t *testing.T) {
 				emptyExcl := []gherkin.TokenType{gherkin.TokenTypeEmpty}
 				sec = ghokin.SectionNext(sec, emptyExcl)
 
-				for i := 0; i < len(ts); i++ {
+				for i := range ts {
 					prev := ghokin.SectionPrevious(sec, emptyExcl)
 					assert.Equal(t, ghokin.SectionKindName(prev), ts[i].previousName)
 					assert.Equal(t, ghokin.SectionKindName(sec), ts[i].currentName)
@@ -489,7 +489,6 @@ func TestTransform(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scenario := scenario
 		t.Run(scenario.input, func(t *testing.T) {
 			t.Parallel()
 			content, err := os.ReadFile(scenario.input)

@@ -73,7 +73,6 @@ func TestFileManagerTransform(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scenario := scenario
 		t.Run(scenario.filename, func(t *testing.T) {
 			t.Parallel()
 			f := ghokin.NewFileManager(
@@ -165,7 +164,7 @@ hello world
 					"/tmp/ghokin/test2/test3/file5.feature",
 					"/tmp/ghokin/test2/test3/file6.feature",
 				} {
-					assert.NoError(t, os.WriteFile(f, []byte(fmt.Sprintf(string(content), i)), 0o777))
+					assert.NoError(t, os.WriteFile(f, fmt.Appendf(nil, string(content), i), 0o777))
 				}
 			},
 			func(errs []error) {
@@ -469,7 +468,7 @@ hello world
 					"/tmp/ghokin/test2/test3/file5.feature",
 					"/tmp/ghokin/test2/test3/file6.feature",
 				} {
-					assert.NoError(t, os.WriteFile(f, []byte(fmt.Sprintf(string(content), i)), 0o777))
+					assert.NoError(t, os.WriteFile(f, fmt.Appendf(nil, string(content), i), 0o777))
 				}
 			},
 			func(errs []error) {
@@ -519,7 +518,7 @@ hello world
 					"/tmp/ghokin/test2/test3/file5.feature",
 					"/tmp/ghokin/test2/test3/file6.feature",
 				} {
-					assert.NoError(t, os.WriteFile(f, []byte(fmt.Sprintf(string(content), i)), 0o777))
+					assert.NoError(t, os.WriteFile(f, fmt.Appendf(nil, string(content), i), 0o777))
 				}
 			},
 			func(errs []error) {

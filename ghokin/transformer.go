@@ -101,16 +101,16 @@ func formatJSONDocString(
 		))...,
 	)
 
-	var jsonLines string
+	var jsonLines strings.Builder
 	for sec.nex.kind != gherkin.TokenTypeDocStringSeparator {
 		sec = sec.nex
 		for _, value := range sec.values {
-			jsonLines += value.Text
+			jsonLines.WriteString(value.Text)
 		}
 	}
 
 	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(jsonLines), "", "  "); err != nil {
+	if err := json.Indent(&prettyJSON, []byte(jsonLines.String()), "", "  "); err != nil {
 		return sec, nil, fmt.Errorf("failed to format json: %w", err)
 	}
 

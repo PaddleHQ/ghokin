@@ -135,10 +135,9 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 		return []error{}
 	}
 
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
+	for range 10 {
 
-		go func() {
+		wg.Go(func() {
 			for file := range fc {
 				b, err := f.Transform(file)
 				if err != nil {
@@ -153,8 +152,7 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 					mu.Unlock()
 				}
 			}
-			wg.Done()
-		}()
+		})
 	}
 
 	for _, file := range files {
