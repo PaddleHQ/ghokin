@@ -2,7 +2,9 @@ package cmd_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -30,8 +32,8 @@ func TestFormatAndReplace(t *testing.T) {
 	)
 
 	tmpDir := t.TempDir()
-	assert.NoError(t, os.WriteFile(tmpDir+"/file1.feature", []byte("Feature: Test\nTest\nScenario: Scenario1\nGiven a test\n"), 0o755))
-	assert.NoError(t, os.WriteFile(tmpDir+"/file2.feature", []byte("Feature: Test\nTest\nScenario: Scenario2\nGiven a test\n"), 0o755))
+	assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file1.feature"), []byte("Feature: Test\nTest\nScenario: Scenario1\nGiven a test\n"), 0o755))
+	assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file2.feature"), []byte("Feature: Test\nTest\nScenario: Scenario2\nGiven a test\n"), 0o755))
 
 	w.Add(1)
 
@@ -52,9 +54,9 @@ func TestFormatAndReplace(t *testing.T) {
 	w.Wait()
 
 	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
-	assert.Equal(t, `"`+tmpDir+`" formatted`+"\n", stdout.String())
+	assert.Equal(t, fmt.Sprintf("%q formatted\n", tmpDir), stdout.String())
 
-	b1, err := os.ReadFile(tmpDir + "/file1.feature")
+	b1, err := os.ReadFile(filepath.Join(tmpDir, "file1.feature"))
 
 	assert.NoError(t, err)
 
@@ -66,7 +68,7 @@ func TestFormatAndReplace(t *testing.T) {
 
 	assert.Equal(t, b1Expected, string(b1))
 
-	b2, err := os.ReadFile(tmpDir + "/file2.feature")
+	b2, err := os.ReadFile(filepath.Join(tmpDir, "file2.feature"))
 
 	assert.NoError(t, err)
 

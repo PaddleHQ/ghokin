@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -58,13 +59,13 @@ func initConfig(msgHandler messageHandler) func() {
 
 		aliases := map[string]string{}
 		if err := json.Unmarshal([]byte(viper.GetString("aliases")), &aliases); viper.IsSet("aliases") && err != nil {
-			msgHandler.errorFatalStr("check aliases is a well-formed JSON : " + err.Error())
+			msgHandler.errorFatalStr(fmt.Sprintf("check aliases is a well-formed JSON : %s", err.Error()))
 		}
 		viper.SetDefault("aliases", aliases)
 
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigParseError); ok {
-				msgHandler.errorFatalStr("check your yaml config file is well-formed : " + err.Error())
+				msgHandler.errorFatalStr(fmt.Sprintf("check your yaml config file is well-formed : %s", err.Error()))
 			}
 		}
 	}
