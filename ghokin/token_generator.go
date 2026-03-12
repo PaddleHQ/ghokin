@@ -1,10 +1,13 @@
 package ghokin
 
 import (
-	"errors"
+	"fmt"
+	"slices"
 
 	gherkin "github.com/cucumber/gherkin/go/v28"
 )
+
+var errTokenNotDefined = fmt.Errorf("token is not defined")
 
 type tokenGenerator struct {
 	section *section
@@ -12,13 +15,13 @@ type tokenGenerator struct {
 
 func (t *tokenGenerator) Build(tok *gherkin.Token) (bool, error) {
 	if tok == nil {
-		return false, errors.New("token is not defined")
+		return false, errTokenNotDefined
 	}
 	if tok.IsEOF() {
 		return true, nil
 	}
 
-	switch true {
+	switch {
 	case t.section == nil:
 		t.section = &section{kind: tok.Type, values: []*gherkin.Token{}}
 	case tok.Type != t.section.kind:
@@ -31,11 +34,11 @@ func (t *tokenGenerator) Build(tok *gherkin.Token) (bool, error) {
 	return true, nil
 }
 
-func (t *tokenGenerator) StartRule(r gherkin.RuleType) (bool, error) {
+func (t *tokenGenerator) StartRule(_ gherkin.RuleType) (bool, error) {
 	return true, nil
 }
 
-func (t *tokenGenerator) EndRule(r gherkin.RuleType) (bool, error) {
+func (t *tokenGenerator) EndRule(_ gherkin.RuleType) (bool, error) {
 	return true, nil
 }
 
@@ -50,13 +53,7 @@ type section struct {
 }
 
 func (s *section) isExcluded(kind gherkin.TokenType, excluded []gherkin.TokenType) bool {
-	for _, e := range excluded {
-		if kind == e {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(excluded, kind)
 }
 
 func (s *section) previous(excluded []gherkin.TokenType) *section {

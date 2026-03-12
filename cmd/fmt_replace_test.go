@@ -1,4 +1,4 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
@@ -6,9 +6,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/PaddleHQ/ghokin/v4/cmd"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,13 +21,13 @@ func TestFormatAndReplace(t *testing.T) {
 
 	viper.Set("indent", 2)
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	assert.NoError(t, os.RemoveAll("/tmp/ghokin"))
 	assert.NoError(t, os.MkdirAll("/tmp/ghokin", 0o777))
@@ -44,15 +45,15 @@ func TestFormatAndReplace(t *testing.T) {
 			w.Done()
 		}()
 
-		cmd := &cobra.Command{}
+		c := &cobra.Command{}
 
-		formatAndReplace(msgHandler, cmd, []string{"/tmp/ghokin"})
+		cmd.TestFormatAndReplace(msgHandler, c, []string{"/tmp/ghokin"})
 	}()
 
 	w.Wait()
 
-	assert.EqualValues(t, 0, code, "Must exit with errors (exit 0)")
-	assert.EqualValues(t, `"/tmp/ghokin" formatted`+"\n", stdout.String())
+	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
+	assert.Equal(t, `"/tmp/ghokin" formatted`+"\n", stdout.String())
 
 	b1, err := os.ReadFile("/tmp/ghokin/file1.feature")
 
@@ -64,7 +65,7 @@ func TestFormatAndReplace(t *testing.T) {
     Given a test
 `
 
-	assert.EqualValues(t, b1Expected, string(b1))
+	assert.Equal(t, b1Expected, string(b1))
 
 	b2, err := os.ReadFile("/tmp/ghokin/file2.feature")
 
@@ -76,7 +77,7 @@ func TestFormatAndReplace(t *testing.T) {
     Given a test
 `
 
-	assert.EqualValues(t, b2Expected, string(b2))
+	assert.Equal(t, b2Expected, string(b2))
 }
 
 func TestFormatAndReplaceWithErrors(t *testing.T) {
@@ -85,13 +86,13 @@ func TestFormatAndReplaceWithErrors(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	type scenario struct {
 		args   []string
@@ -109,7 +110,7 @@ func TestFormatAndReplaceWithErrors(t *testing.T) {
 		},
 		{
 			[]string{"fixtures/file.txt"},
-			"Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'Whatever'\n",
+			"failed to parse gherkin: Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'Whatever'\n",
 		},
 	}
 
@@ -125,15 +126,15 @@ func TestFormatAndReplaceWithErrors(t *testing.T) {
 				w.Done()
 			}()
 
-			cmd := &cobra.Command{}
+			c := &cobra.Command{}
 
-			formatAndReplace(msgHandler, cmd, s.args)
+			cmd.TestFormatAndReplace(msgHandler, c, s.args)
 		}()
 
 		w.Wait()
 
-		assert.EqualValues(t, 1, code, "Must exit with errors (exit 1)")
-		assert.EqualValues(t, s.errMsg, stderr.String())
+		assert.Equal(t, 1, code, "Must exit with errors (exit 1)")
+		assert.Equal(t, s.errMsg, stderr.String())
 
 		stderr.Reset()
 		stdout.Reset()

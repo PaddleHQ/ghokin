@@ -12,7 +12,7 @@ var fmtReplaceCmd = &cobra.Command{
 	Run:   setupCmdFunc(formatAndReplace),
 }
 
-func formatAndReplace(msgHandler messageHandler, cmd *cobra.Command, args []string) {
+func formatAndReplace(msgHandler messageHandler, _ *cobra.Command, args []string) {
 	if len(args) != 1 {
 		msgHandler.errorFatalStr("you must provide a filename or a folder as argument")
 	}
@@ -29,6 +29,12 @@ func formatAndReplace(msgHandler messageHandler, cmd *cobra.Command, args []stri
 }
 
 func init() {
-	fmtReplaceCmd.Flags().StringSliceVarP(&extensions, "extensions", "e", []string{"feature"}, "Define file extensions to use to find feature files, each separated with a comma")
+	fmtReplaceCmd.Flags().StringSliceVarP(
+		&extensions,
+		"extensions",
+		"e",
+		[]string{"feature"},
+		"Define file extensions to use to find feature files, each separated with a comma",
+	)
 	fmtCmd.AddCommand(fmtReplaceCmd)
 }

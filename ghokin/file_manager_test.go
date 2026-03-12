@@ -1,9 +1,11 @@
-package ghokin
+package ghokin_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/PaddleHQ/ghokin/v4/ghokin"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,34 +19,34 @@ func TestFileManagerTransform(t *testing.T) {
 	scenarios := []scenario{
 		{
 			"fixtures/file1.feature",
-			func(buf []byte, err error) {
+			func(buf []byte, _ error) {
 				b, e := os.ReadFile("fixtures/file1.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
 			"fixtures/utf8-with-bom.feature",
-			func(buf []byte, err error) {
+			func(buf []byte, _ error) {
 				b, e := os.ReadFile("fixtures/utf8-with-bom.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
 			"fixtures/file1-with-cr.feature",
-			func(buf []byte, err error) {
+			func(buf []byte, _ error) {
 				b, e := os.ReadFile("fixtures/file1-with-cr.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
 			"fixtures/file1-with-crlf.feature",
-			func(buf []byte, err error) {
+			func(buf []byte, _ error) {
 				b, e := os.ReadFile("fixtures/file1-with-crlf.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
@@ -53,28 +55,28 @@ func TestFileManagerTransform(t *testing.T) {
 				assert.NoError(t, err)
 				b, e := os.ReadFile("fixtures/iso-8859-1-encoding.expected.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
 			"fixtures/",
-			func(buf []byte, err error) {
-				assert.EqualError(t, err, "read fixtures/: is a directory")
+			func(_ []byte, err error) {
+				assert.EqualError(t, err, "failed to read file: read fixtures: is a directory")
 			},
 		},
 		{
 			"fixtures/invalid.feature",
-			func(buf []byte, err error) {
+			func(_ []byte, err error) {
 				assert.Error(t, err)
 			},
 		},
 	}
 
 	for _, scenario := range scenarios {
-		scenario := scenario
 		t.Run(scenario.filename, func(t *testing.T) {
 			t.Parallel()
-			f := NewFileManager(2,
+			f := ghokin.NewFileManager(
+				2,
 				map[string]string{
 					"seq": "seq 1 3",
 				},
@@ -115,7 +117,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file1.feature", content, 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 
 				content := `Feature: test
   test
@@ -130,7 +132,7 @@ hello world
 
 				b, e := os.ReadFile("/tmp/ghokin/file1.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, content, string(b))
+				assert.Equal(t, content, string(b))
 			},
 		},
 		{
@@ -162,11 +164,11 @@ hello world
 					"/tmp/ghokin/test2/test3/file5.feature",
 					"/tmp/ghokin/test2/test3/file6.feature",
 				} {
-					assert.NoError(t, os.WriteFile(f, []byte(fmt.Sprintf(string(content), i)), 0o777))
+					assert.NoError(t, os.WriteFile(f, fmt.Appendf(nil, string(content), i), 0o777))
 				}
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 
 				content := `Feature: test
   test
@@ -189,7 +191,7 @@ hello world
 				} {
 					b, e := os.ReadFile(f)
 					assert.NoError(t, e)
-					assert.EqualValues(t, fmt.Sprintf(content, i), string(b))
+					assert.Equal(t, fmt.Sprintf(content, i), string(b))
 				}
 			},
 		},
@@ -223,9 +225,9 @@ hello world
 				assert.Len(t, errs, 2)
 
 				msgs := []string{
-					`an error occurred with file "/tmp/ghokin/file2.feature" : Parser errors:
+					`an error occurred with file "/tmp/ghokin/file2.feature" : failed to parse gherkin: Parser errors:
 (1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whateverFeature: test'`,
-					`an error occurred with file "/tmp/ghokin/test1/file5.feature" : Parser errors:
+					`an error occurred with file "/tmp/ghokin/test1/file5.feature" : failed to parse gherkin: Parser errors:
 (1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whateverFeature: test'`,
 				}
 
@@ -267,7 +269,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file3.feat", content, 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 
 				contentFormatted := `Feature: test
   test
@@ -310,7 +312,7 @@ hello world
 				} {
 					b, e := os.ReadFile(s.filename)
 					assert.NoError(t, e)
-					assert.EqualValues(t, s.expected, string(b))
+					assert.Equal(t, s.expected, string(b))
 				}
 			},
 		},
@@ -325,7 +327,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file2.txt", []byte("file2"), 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -335,7 +337,10 @@ hello world
 			func() {},
 			func(errs []error) {
 				assert.Len(t, errs, 1)
-				assert.EqualError(t, errs[0], "Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whatever'")
+				assert.EqualError(
+					t, errs[0],
+					"failed to parse gherkin: Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whatever'",
+				)
 			},
 		},
 		{
@@ -360,9 +365,10 @@ hello world
 	}
 
 	for _, scenario := range scenarios {
-		t.Run(scenario.testName, func(t *testing.T) {
+		t.Run(scenario.testName, func(_ *testing.T) {
 			scenario.setup()
-			f := NewFileManager(2,
+			f := ghokin.NewFileManager(
+				2,
 				map[string]string{
 					"seq": "seq 1 3",
 				},
@@ -404,7 +410,10 @@ hello world
 			},
 			func(errs []error) {
 				assert.Len(t, errs, 1)
-				assert.EqualError(t, errs[0], `an error occurred with file "/tmp/ghokin/file1.feature" : file is not properly formatted`)
+				assert.EqualError(
+					t, errs[0],
+					`an error occurred with file "/tmp/ghokin/file1.feature" : file is not properly formatted`,
+				)
 			},
 		},
 		{
@@ -427,7 +436,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file1.feature", content, 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -459,7 +468,7 @@ hello world
 					"/tmp/ghokin/test2/test3/file5.feature",
 					"/tmp/ghokin/test2/test3/file6.feature",
 				} {
-					assert.NoError(t, os.WriteFile(f, []byte(fmt.Sprintf(string(content), i)), 0o777))
+					assert.NoError(t, os.WriteFile(f, fmt.Appendf(nil, string(content), i), 0o777))
 				}
 			},
 			func(errs []error) {
@@ -509,11 +518,11 @@ hello world
 					"/tmp/ghokin/test2/test3/file5.feature",
 					"/tmp/ghokin/test2/test3/file6.feature",
 				} {
-					assert.NoError(t, os.WriteFile(f, []byte(fmt.Sprintf(string(content), i)), 0o777))
+					assert.NoError(t, os.WriteFile(f, fmt.Appendf(nil, string(content), i), 0o777))
 				}
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -545,9 +554,9 @@ hello world
 				assert.Len(t, errs, 2)
 
 				msgs := []string{
-					`an error occurred with file "/tmp/ghokin/file2.feature" : Parser errors:
+					`an error occurred with file "/tmp/ghokin/file2.feature" : failed to parse gherkin: Parser errors:
 (1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whateverFeature: test'`,
-					`an error occurred with file "/tmp/ghokin/test1/file5.feature" : Parser errors:
+					`an error occurred with file "/tmp/ghokin/test1/file5.feature" : failed to parse gherkin: Parser errors:
 (1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whateverFeature: test'`,
 				}
 
@@ -614,7 +623,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file2.txt", []byte("file2"), 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -624,7 +633,10 @@ hello world
 			func() {},
 			func(errs []error) {
 				assert.Len(t, errs, 1)
-				assert.EqualError(t, errs[0], "Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whatever'")
+				assert.EqualError(
+					t, errs[0],
+					"failed to parse gherkin: Parser errors:\n(1:1): expected: #EOF, #Language, #TagLine, #FeatureLine, #Comment, #Empty, got 'whatever'",
+				)
 			},
 		},
 		{
@@ -649,10 +661,11 @@ hello world
 	}
 
 	for _, scenario := range scenarios {
-		t.Run(scenario.testName, func(t *testing.T) {
+		t.Run(scenario.testName, func(_ *testing.T) {
 			scenario.setup()
 
-			f := NewFileManager(2,
+			f := ghokin.NewFileManager(
+				2,
 				map[string]string{
 					"seq": "seq 1 3",
 				},

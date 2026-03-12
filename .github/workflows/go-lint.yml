@@ -1,0 +1,78 @@
+# DO NOT EDIT: This file should only be modified in the `go-library-template` repo.
+
+name: Ensure go code passes linting rules
+
+on:
+  pull_request:
+
+env:
+  # Required to enable support for synctest.Run
+  # This will be removed once we update to go 1.25
+  GOEXPERIMENT: synctest
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # Required to check out the code
+  pull-requests: write # Required to post a comment on the PR
+  checks: write # Required to post a comment on the PR
+  actions: write # required for `workflow-dispatch` to trigger the automerge workflow
+
+jobs:
+  lint:
+    name: Ensure code passes linting rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        with:
+          owner: ${{ github.repository_owner }}
+          private: ${{ github.event.repository.private }}
+          private-key: ${{ secrets.PRIVATE_GO_CI_PRIVATE_KEY }}
+
+      - name: Read build config
+        id: build_config
+        uses: pietrobolcato/action-read-yaml@9f13718d61111b69f30ab4ac683e67a56d254e1d # v1.1.0
+        with:
+          config: ${{ github.workspace }}/build-config.yaml
+
+      - name: Read lint config
+        id: lint-config
+        uses: pietrobolcato/action-read-yaml@9f13718d61111b69f30ab4ac683e67a56d254e1d # v1.1.0
+        with:
+          config: ${{ github.workspace }}/.golangci.yml
+
+      - name: golangci-lint-v1
+        if:   steps.lint-config.outputs['version'] != '2'
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # (6.5.0) - DO NOT UPGRADE!!!
+        with:
+          version: v1.64.6
+          args: --timeout=${{ steps.build_config.outputs['lintTimeout'] || '5m' }} --out-format github-actions
+          verify: false
+
+      - name: golangci-lint-v2
+        if:   steps.lint-config.outputs['version'] == '2'
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.5.0
+          args: --timeout=${{ steps.build_config.outputs['lintTimeout'] || '5m' }}
+          verify: false
+
+      - name: Automerge
+        uses: ./.github/actions/trigger-automerge
+        with:
+          event: ${{ toJSON(github.event) }}
+          hasAutoApproverPrivateKey: ${{ secrets.AUTO_APPROVER_PRIVATE_KEY != '' }}

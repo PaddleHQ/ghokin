@@ -6,14 +6,14 @@ import (
 
 var appVersion = ""
 
-// versionCmd represents the version command
+// versionCmd represents the version command.
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "App version",
 	Run:   setupCmdFunc(version),
 }
 
-func version(msgHandler messageHandler, cmd *cobra.Command, args []string) {
+func version(msgHandler messageHandler, _ *cobra.Command, _ []string) {
 	msgHandler.success(appVersion)
 }
 

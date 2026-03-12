@@ -1,3 +1,4 @@
+// Package ghokin provides formatting and transformation for Gherkin feature files.
 package ghokin
 
 import (
@@ -10,31 +11,41 @@ import (
 	"sync"
 
 	"github.com/PaddleHQ/ghokin/v4/ghokin/internal/transformer"
+
 	"github.com/saintfish/chardet"
 	"golang.org/x/net/html/charset"
 )
 
-// ProcessFileError is emitted when processing a file trigger an error
+// sentinel errors for file operations.
+var (
+	errReadFile      = fmt.Errorf("failed to read file")
+	errDetectCharset = fmt.Errorf("failed to detect charset")
+	errNewReader     = fmt.Errorf("failed to create charset reader")
+	errReadContent   = fmt.Errorf("failed to read content")
+	errWalkPath      = fmt.Errorf("failed to walk path")
+)
+
+// ProcessFileError is emitted when processing a file trigger an error.
 type ProcessFileError struct {
 	Message string
 	File    string
 }
 
-// Error dumps a string error
+// Error dumps a string error.
 func (p ProcessFileError) Error() string {
-	return fmt.Sprintf(`an error occurred with file "%s" : %s`, p.File, p.Message)
+	return fmt.Sprintf("an error occurred with file %q : %s", p.File, p.Message)
 }
 
 type aliases map[string]string
 
-// FileManager handles transformation on feature files
+// FileManager handles transformation on feature files.
 type FileManager struct {
 	indent  int
 	aliases aliases
 }
 
 // NewFileManager creates a brand new FileManager, it requires indentation values and aliases defined
-// as a shell commands in comments
+// as a shell commands in comments.
 func NewFileManager(indent int, aliases map[string]string) FileManager {
 	return FileManager{
 		indent,
@@ -42,25 +53,25 @@ func NewFileManager(indent int, aliases map[string]string) FileManager {
 	}
 }
 
-// Transform formats and applies shell commands on feature file
+// Transform formats and applies shell commands on feature file.
 func (f FileManager) Transform(filename string) ([]byte, error) {
-	content, err := os.ReadFile(filename)
+	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, fmt.Errorf("%w: %w", errReadFile, err)
 	}
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(content)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, fmt.Errorf("%w: %w", errDetectCharset, err)
 	}
 	if result.Charset != "UTF-8" {
 		r, err := charset.NewReaderLabel(result.Charset, bytes.NewBuffer(content))
 		if err != nil {
-			return []byte{}, err
+			return []byte{}, fmt.Errorf("%w: %w", errNewReader, err)
 		}
 		content, err = io.ReadAll(r)
 		if err != nil {
-			return []byte{}, err
+			return []byte{}, fmt.Errorf("%w: %w", errReadContent, err)
 		}
 	}
 	contentTransformer := &transformer.ContentTransformer{}
@@ -78,12 +89,12 @@ func (f FileManager) Transform(filename string) ([]byte, error) {
 }
 
 // TransformAndReplace formats and applies shell commands on file or folder
-// and replace the content of files
+// and replace the content of files.
 func (f FileManager) TransformAndReplace(path string, extensions []string) []error {
 	return f.process(path, extensions, replaceFileWithContent)
 }
 
-// Check ensures file or folder is well formatted
+// Check ensures file or folder is well formatted.
 func (f FileManager) Check(path string, extensions []string) []error {
 	return f.process(path, extensions, check)
 }
@@ -124,10 +135,9 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 		return []error{}
 	}
 
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
+	for range 10 {
 
-		go func() {
+		wg.Go(func() {
 			for file := range fc {
 				b, err := f.Transform(file)
 				if err != nil {
@@ -142,8 +152,7 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 					mu.Unlock()
 				}
 			}
-			wg.Done()
-		}()
+		})
 	}
 
 	for _, file := range files {
@@ -157,7 +166,7 @@ func (f FileManager) processPath(path string, extensions []string, processFile f
 }
 
 func replaceFileWithContent(file string, content []byte) error {
-	f, err := os.Create(file)
+	f, err := os.Create(filepath.Clean(file))
 	if err != nil {
 		return ProcessFileError{Message: err.Error(), File: file}
 	}
@@ -198,7 +207,7 @@ func findFeatureFiles(rootPath string, extensions []string) ([]string, error) {
 
 		return nil
 	}); err != nil {
-		return []string{}, err
+		return []string{}, fmt.Errorf("%w: %w", errWalkPath, err)
 	}
 
 	return files, nil

@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Short: "Clean and/or apply transformation on gherkin files",
 }
 
-// Execute runs root command
+// Execute runs root command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		newMessageHandler().errorFatal(err)
@@ -63,8 +63,7 @@ func initConfig(msgHandler messageHandler) func() {
 		viper.SetDefault("aliases", aliases)
 
 		if err := viper.ReadInConfig(); err != nil {
-			switch err.(type) {
-			case viper.ConfigParseError:
+			if _, ok := err.(viper.ConfigParseError); ok {
 				msgHandler.errorFatalStr("check your yaml config file is well-formed : " + err.Error())
 			}
 		}

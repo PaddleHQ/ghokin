@@ -11,7 +11,7 @@ var checkCmd = &cobra.Command{
 	Run:   setupCmdFunc(check),
 }
 
-func check(msgHandler messageHandler, cmd *cobra.Command, args []string) {
+func check(msgHandler messageHandler, _ *cobra.Command, args []string) {
 	if len(args) != 1 {
 		msgHandler.errorFatalStr("you must provide a filename or a folder as argument")
 	}
@@ -28,6 +28,12 @@ func check(msgHandler messageHandler, cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	checkCmd.Flags().StringSliceVarP(&extensions, "extensions", "e", []string{"feature"}, "Define file extensions to use to find feature files, each separated with a comma")
+	checkCmd.Flags().StringSliceVarP(
+		&extensions,
+		"extensions",
+		"e",
+		[]string{"feature"},
+		"Define file extensions to use to find feature files, each separated with a comma",
+	)
 	rootCmd.AddCommand(checkCmd)
 }

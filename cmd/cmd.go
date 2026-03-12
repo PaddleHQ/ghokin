@@ -1,3 +1,4 @@
+// Package cmd provides the CLI commands for ghokin.
 package cmd
 
 import (

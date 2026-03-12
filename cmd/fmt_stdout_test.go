@@ -1,4 +1,4 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
@@ -6,9 +6,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/PaddleHQ/ghokin/v4/cmd"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,13 +21,13 @@ func TestFormatOnStdoutFromFile(t *testing.T) {
 
 	viper.Set("indent", 2)
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	w.Add(1)
 
@@ -39,10 +40,10 @@ func TestFormatOnStdoutFromFile(t *testing.T) {
 			w.Done()
 		}()
 
-		cmd := &cobra.Command{}
+		c := &cobra.Command{}
 		args := []string{"fixtures/feature.feature"}
 
-		formatOnStdout(msgHandler, cmd, args)
+		cmd.TestFormatOnStdout(msgHandler, c, args)
 	}()
 
 	w.Wait()
@@ -51,8 +52,8 @@ func TestFormatOnStdoutFromFile(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, 0, code, "Must exit with no errors (exit 0)")
-	assert.EqualValues(t, string(b), stdout.String())
+	assert.Equal(t, 0, code, "Must exit with no errors (exit 0)")
+	assert.Equal(t, string(b), stdout.String())
 }
 
 func TestFormatOnStdoutFromStdin(t *testing.T) {
@@ -63,13 +64,13 @@ func TestFormatOnStdoutFromStdin(t *testing.T) {
 
 	viper.Set("indent", 2)
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	w.Add(1)
 
@@ -84,10 +85,10 @@ func TestFormatOnStdoutFromStdin(t *testing.T) {
 
 		content, err := os.ReadFile("fixtures/feature.feature")
 		assert.NoError(t, err)
-		cmd := &cobra.Command{}
+		c := &cobra.Command{}
 		args := []string{}
-		cmd.SetIn(bytes.NewBuffer(content))
-		formatOnStdout(msgHandler, cmd, args)
+		c.SetIn(bytes.NewBuffer(content))
+		cmd.TestFormatOnStdout(msgHandler, c, args)
 	}()
 
 	w.Wait()
@@ -96,8 +97,8 @@ func TestFormatOnStdoutFromStdin(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, 0, code, "Must exit with no errors (exit 0)")
-	assert.EqualValues(t, string(b), stdout.String())
+	assert.Equal(t, 0, code, "Must exit with no errors (exit 0)")
+	assert.Equal(t, string(b), stdout.String())
 }
 
 func TestFormatOnStdoutWithErrors(t *testing.T) {
@@ -106,13 +107,13 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	msgHandler := messageHandler{
+	msgHandler := cmd.NewTestMessageHandler(
 		func(exitCode int) {
 			panic(exitCode)
 		},
 		&stdout,
 		&stderr,
-	}
+	)
 
 	type scenario struct {
 		args   []string
@@ -122,7 +123,7 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 	scenarios := []scenario{
 		{
 			[]string{"fixtures/featurefeature.feature"},
-			"open fixtures/featurefeature.feature: no such file or directory\n",
+			"failed to read file: open fixtures/featurefeature.feature: no such file or directory\n",
 		},
 	}
 
@@ -138,15 +139,15 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 				w.Done()
 			}()
 
-			cmd := &cobra.Command{}
+			c := &cobra.Command{}
 
-			formatOnStdout(msgHandler, cmd, s.args)
+			cmd.TestFormatOnStdout(msgHandler, c, s.args)
 		}()
 
 		w.Wait()
 
-		assert.EqualValues(t, 1, code, "Must exit with errors (exit 1)")
-		assert.EqualValues(t, s.errMsg, stderr.String())
+		assert.Equal(t, 1, code, "Must exit with errors (exit 1)")
+		assert.Equal(t, s.errMsg, stderr.String())
 
 		stderr.Reset()
 		stdout.Reset()
