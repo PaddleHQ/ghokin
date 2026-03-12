@@ -10,31 +10,32 @@ import (
 	"sync"
 
 	"github.com/PaddleHQ/ghokin/v4/ghokin/internal/transformer"
+
 	"github.com/saintfish/chardet"
 	"golang.org/x/net/html/charset"
 )
 
-// ProcessFileError is emitted when processing a file trigger an error
+// ProcessFileError is emitted when processing a file trigger an error.
 type ProcessFileError struct {
 	Message string
 	File    string
 }
 
-// Error dumps a string error
+// Error dumps a string error.
 func (p ProcessFileError) Error() string {
 	return fmt.Sprintf(`an error occurred with file "%s" : %s`, p.File, p.Message)
 }
 
 type aliases map[string]string
 
-// FileManager handles transformation on feature files
+// FileManager handles transformation on feature files.
 type FileManager struct {
 	indent  int
 	aliases aliases
 }
 
 // NewFileManager creates a brand new FileManager, it requires indentation values and aliases defined
-// as a shell commands in comments
+// as a shell commands in comments.
 func NewFileManager(indent int, aliases map[string]string) FileManager {
 	return FileManager{
 		indent,
@@ -42,7 +43,7 @@ func NewFileManager(indent int, aliases map[string]string) FileManager {
 	}
 }
 
-// Transform formats and applies shell commands on feature file
+// Transform formats and applies shell commands on feature file.
 func (f FileManager) Transform(filename string) ([]byte, error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
@@ -78,12 +79,12 @@ func (f FileManager) Transform(filename string) ([]byte, error) {
 }
 
 // TransformAndReplace formats and applies shell commands on file or folder
-// and replace the content of files
+// and replace the content of files.
 func (f FileManager) TransformAndReplace(path string, extensions []string) []error {
 	return f.process(path, extensions, replaceFileWithContent)
 }
 
-// Check ensures file or folder is well formatted
+// Check ensures file or folder is well formatted.
 func (f FileManager) Check(path string, extensions []string) []error {
 	return f.process(path, extensions, check)
 }

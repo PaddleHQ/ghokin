@@ -26,7 +26,7 @@ func newMessageHandler() messageHandler {
 	return messageHandler{os.Exit, os.Stdout, os.Stderr}
 }
 
-func (m messageHandler) print(str string, args ...interface{}) {
+func (m messageHandler) print(str string, args ...any) {
 	failOnFprintError(fmt.Fprintf(m.stdoutWriter, str, args...))
 }
 
@@ -44,6 +44,6 @@ func (m messageHandler) errorFatalStr(err string) {
 	m.exit(1)
 }
 
-func (m messageHandler) success(str string, args ...interface{}) {
+func (m messageHandler) success(str string, args ...any) {
 	failOnFprintError(color.New(color.FgGreen).Fprintf(m.stdoutWriter, str+"\n", args...))
 }

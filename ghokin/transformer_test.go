@@ -256,7 +256,7 @@ func TestExtractSections(t *testing.T) {
 				}
 
 				assert.NoError(t, err)
-				assert.Equal(t, sec.kind.Name(), "")
+				assert.Equal(t, "", sec.kind.Name())
 
 				ts := []test{
 					{
@@ -376,7 +376,7 @@ func TestExtractSections(t *testing.T) {
 					assert.Equal(t, sec.kind.Name(), ts[i].currentName)
 
 					if i == len(ts)-1 {
-						assert.Equal(t, sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty}), (*section)(nil))
+						assert.Equal(t, (*section)(nil), sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty}))
 					} else {
 						assert.Equal(t, sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty}).kind.Name(), ts[i].nextName)
 					}
@@ -495,7 +495,7 @@ func TestTransform(t *testing.T) {
 
 			b, e := os.ReadFile(scenario.expected)
 			assert.NoError(t, e)
-			assert.EqualValues(t, string(b), string(buf))
+			assert.Equal(t, string(b), string(buf))
 		})
 	}
 }

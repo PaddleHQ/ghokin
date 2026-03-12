@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,8 +50,8 @@ func TestFormatAndReplace(t *testing.T) {
 
 	w.Wait()
 
-	assert.EqualValues(t, 0, code, "Must exit with errors (exit 0)")
-	assert.EqualValues(t, `"/tmp/ghokin" formatted`+"\n", stdout.String())
+	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
+	assert.Equal(t, `"/tmp/ghokin" formatted`+"\n", stdout.String())
 
 	b1, err := os.ReadFile("/tmp/ghokin/file1.feature")
 
@@ -64,7 +63,7 @@ func TestFormatAndReplace(t *testing.T) {
     Given a test
 `
 
-	assert.EqualValues(t, b1Expected, string(b1))
+	assert.Equal(t, b1Expected, string(b1))
 
 	b2, err := os.ReadFile("/tmp/ghokin/file2.feature")
 
@@ -76,7 +75,7 @@ func TestFormatAndReplace(t *testing.T) {
     Given a test
 `
 
-	assert.EqualValues(t, b2Expected, string(b2))
+	assert.Equal(t, b2Expected, string(b2))
 }
 
 func TestFormatAndReplaceWithErrors(t *testing.T) {
@@ -132,8 +131,8 @@ func TestFormatAndReplaceWithErrors(t *testing.T) {
 
 		w.Wait()
 
-		assert.EqualValues(t, 1, code, "Must exit with errors (exit 1)")
-		assert.EqualValues(t, s.errMsg, stderr.String())
+		assert.Equal(t, 1, code, "Must exit with errors (exit 1)")
+		assert.Equal(t, s.errMsg, stderr.String())
 
 		stderr.Reset()
 		stdout.Reset()

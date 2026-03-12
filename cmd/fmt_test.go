@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,6 +25,6 @@ func TestFormat(t *testing.T) {
 
 	format(msgHandler, cmd, args)
 
-	assert.EqualValues(t, "", stdout.String())
-	assert.EqualValues(t, "", stderr.String())
+	assert.Empty(t, stdout.String())
+	assert.Empty(t, stderr.String())
 }

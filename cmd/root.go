@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Short: "Clean and/or apply transformation on gherkin files",
 }
 
-// Execute runs root command
+// Execute runs root command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		newMessageHandler().errorFatal(err)

@@ -14,12 +14,12 @@ import (
 )
 
 // CmdErr is thrown when an error occurred when calling
-// a command on an input, both stdout and stderr are stored
+// a command on an input, both stdout and stderr are stored.
 type CmdErr struct {
 	output string
 }
 
-// Error outputs both stdout and stderr
+// Error outputs both stdout and stderr.
 func (e CmdErr) Error() string {
 	return e.output
 }
@@ -311,7 +311,7 @@ func extractTableRowsAndComments(tokens []*gherkin.Token) []string {
 	var tableRows []string
 	lengths := calculateLonguestLineLengthPerColumn(rows)
 	for _, tableElement := range tableElements {
-		inputs := []interface{}{}
+		inputs := []any{}
 		fmtDirective := ""
 		if tableElement.kind == gherkin.TokenTypeComment {
 			inputs = append(inputs, trimLinesSpace(tableElement.content)[0])

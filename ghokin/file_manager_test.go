@@ -20,7 +20,7 @@ func TestFileManagerTransform(t *testing.T) {
 			func(buf []byte, err error) {
 				b, e := os.ReadFile("fixtures/file1.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
@@ -28,7 +28,7 @@ func TestFileManagerTransform(t *testing.T) {
 			func(buf []byte, err error) {
 				b, e := os.ReadFile("fixtures/utf8-with-bom.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
@@ -36,7 +36,7 @@ func TestFileManagerTransform(t *testing.T) {
 			func(buf []byte, err error) {
 				b, e := os.ReadFile("fixtures/file1-with-cr.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestFileManagerTransform(t *testing.T) {
 			func(buf []byte, err error) {
 				b, e := os.ReadFile("fixtures/file1-with-crlf.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func TestFileManagerTransform(t *testing.T) {
 				assert.NoError(t, err)
 				b, e := os.ReadFile("fixtures/iso-8859-1-encoding.expected.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{
@@ -115,7 +115,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file1.feature", content, 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 
 				content := `Feature: test
   test
@@ -130,7 +130,7 @@ hello world
 
 				b, e := os.ReadFile("/tmp/ghokin/file1.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, content, string(b))
+				assert.Equal(t, content, string(b))
 			},
 		},
 		{
@@ -166,7 +166,7 @@ hello world
 				}
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 
 				content := `Feature: test
   test
@@ -189,7 +189,7 @@ hello world
 				} {
 					b, e := os.ReadFile(f)
 					assert.NoError(t, e)
-					assert.EqualValues(t, fmt.Sprintf(content, i), string(b))
+					assert.Equal(t, fmt.Sprintf(content, i), string(b))
 				}
 			},
 		},
@@ -267,7 +267,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file3.feat", content, 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 
 				contentFormatted := `Feature: test
   test
@@ -310,7 +310,7 @@ hello world
 				} {
 					b, e := os.ReadFile(s.filename)
 					assert.NoError(t, e)
-					assert.EqualValues(t, s.expected, string(b))
+					assert.Equal(t, s.expected, string(b))
 				}
 			},
 		},
@@ -325,7 +325,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file2.txt", []byte("file2"), 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -427,7 +427,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file1.feature", content, 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -513,7 +513,7 @@ hello world
 				}
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{
@@ -614,7 +614,7 @@ hello world
 				assert.NoError(t, os.WriteFile("/tmp/ghokin/file2.txt", []byte("file2"), 0o777))
 			},
 			func(errs []error) {
-				assert.Len(t, errs, 0)
+				assert.Empty(t, errs)
 			},
 		},
 		{

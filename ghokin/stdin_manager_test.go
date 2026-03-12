@@ -39,7 +39,7 @@ func TestStdinManagerTransform(t *testing.T) {
 			func(buf []byte, err error) {
 				b, e := os.ReadFile("fixtures/file1.feature")
 				assert.NoError(t, e)
-				assert.EqualValues(t, string(b), string(buf))
+				assert.Equal(t, string(b), string(buf))
 			},
 		},
 		{

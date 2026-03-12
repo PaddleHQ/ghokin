@@ -6,14 +6,14 @@ import (
 	"github.com/PaddleHQ/ghokin/v4/ghokin/internal/transformer"
 )
 
-// StdinManager handles transformation from stdin
+// StdinManager handles transformation from stdin.
 type StdinManager struct {
 	indent  int
 	aliases aliases
 }
 
 // NewStdinManager creates a brand new StdinManager, it requires indentation values and aliases defined
-// as a shell commands in comments
+// as a shell commands in comments.
 func NewStdinManager(indent int, aliases map[string]string) StdinManager {
 	return StdinManager{
 		indent,
@@ -21,7 +21,7 @@ func NewStdinManager(indent int, aliases map[string]string) StdinManager {
 	}
 }
 
-// Transform formats and applies shell commands on stdin
+// Transform formats and applies shell commands on stdin.
 func (s StdinManager) Transform(reader io.Reader) ([]byte, error) {
 	content, err := io.ReadAll(reader)
 	if err != nil {

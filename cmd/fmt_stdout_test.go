@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,8 +50,8 @@ func TestFormatOnStdoutFromFile(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, 0, code, "Must exit with no errors (exit 0)")
-	assert.EqualValues(t, string(b), stdout.String())
+	assert.Equal(t, 0, code, "Must exit with no errors (exit 0)")
+	assert.Equal(t, string(b), stdout.String())
 }
 
 func TestFormatOnStdoutFromStdin(t *testing.T) {
@@ -96,8 +95,8 @@ func TestFormatOnStdoutFromStdin(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, 0, code, "Must exit with no errors (exit 0)")
-	assert.EqualValues(t, string(b), stdout.String())
+	assert.Equal(t, 0, code, "Must exit with no errors (exit 0)")
+	assert.Equal(t, string(b), stdout.String())
 }
 
 func TestFormatOnStdoutWithErrors(t *testing.T) {
@@ -145,8 +144,8 @@ func TestFormatOnStdoutWithErrors(t *testing.T) {
 
 		w.Wait()
 
-		assert.EqualValues(t, 1, code, "Must exit with errors (exit 1)")
-		assert.EqualValues(t, s.errMsg, stderr.String())
+		assert.Equal(t, 1, code, "Must exit with errors (exit 1)")
+		assert.Equal(t, s.errMsg, stderr.String())
 
 		stderr.Reset()
 		stdout.Reset()

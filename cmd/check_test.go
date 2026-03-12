@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,8 +50,8 @@ func TestCheck(t *testing.T) {
 
 	w.Wait()
 
-	assert.EqualValues(t, 0, code, "Must exit with errors (exit 0)")
-	assert.EqualValues(t, `"/tmp/ghokin" is well formatted`+"\n", stdout.String())
+	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
+	assert.Equal(t, `"/tmp/ghokin" is well formatted`+"\n", stdout.String())
 }
 
 func TestCheckErrors(t *testing.T) {
@@ -108,8 +107,8 @@ func TestCheckErrors(t *testing.T) {
 
 		w.Wait()
 
-		assert.EqualValues(t, 1, code, "Must exit with errors (exit 1)")
-		assert.EqualValues(t, s.errMsg, stderr.String())
+		assert.Equal(t, 1, code, "Must exit with errors (exit 1)")
+		assert.Equal(t, s.errMsg, stderr.String())
 
 		stderr.Reset()
 		stdout.Reset()
