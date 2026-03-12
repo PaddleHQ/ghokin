@@ -29,10 +29,9 @@ func TestCheck(t *testing.T) {
 		&stderr,
 	)
 
-	assert.NoError(t, os.RemoveAll("/tmp/ghokin"))
-	assert.NoError(t, os.MkdirAll("/tmp/ghokin", 0o777))
-	assert.NoError(t, os.WriteFile("/tmp/ghokin/file1.feature", []byte("Feature: Test\n  Test\n  Scenario: Scenario1\n    Given a test\n"), 0o755))
-	assert.NoError(t, os.WriteFile("/tmp/ghokin/file2.feature", []byte("Feature: Test\n  Test\n  Scenario: Scenario2\n    Given a test\n"), 0o755))
+	tmpDir := t.TempDir()
+	assert.NoError(t, os.WriteFile(tmpDir+"/file1.feature", []byte("Feature: Test\n  Test\n  Scenario: Scenario1\n    Given a test\n"), 0o755))
+	assert.NoError(t, os.WriteFile(tmpDir+"/file2.feature", []byte("Feature: Test\n  Test\n  Scenario: Scenario2\n    Given a test\n"), 0o755))
 
 	w.Add(1)
 
@@ -47,13 +46,13 @@ func TestCheck(t *testing.T) {
 
 		c := &cobra.Command{}
 
-		cmd.TestCheck(msgHandler, c, []string{"/tmp/ghokin"})
+		cmd.TestCheck(msgHandler, c, []string{tmpDir})
 	}()
 
 	w.Wait()
 
 	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
-	assert.Equal(t, `"/tmp/ghokin" is well formatted`+"\n", stdout.String())
+	assert.Equal(t, `"`+tmpDir+`" is well formatted`+"\n", stdout.String())
 }
 
 func TestCheckErrors(t *testing.T) {
