@@ -173,7 +173,7 @@ func TestExtractCommand(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scenario.test(ghokin.ExportExtractCommand(scenario.tokens, aliases))
+		scenario.test(ghokin.ExportExtractCommand(t.Context(), scenario.tokens, aliases))
 	}
 }
 
@@ -211,7 +211,7 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			ghokin.NewCommandForTest("sh", "-c", "cat"),
+			ghokin.NewCommandForTest(t.Context(), "sh", "-c", "cat"),
 			[]string{"hello world !", "hello universe !"},
 			func(lines []string, err error) {
 				assert.Equal(t, []string{"hello world !", "hello universe !"}, lines)
@@ -219,7 +219,7 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			ghokin.NewCommandForTest("sh", "-c", "catttttt"),
+			ghokin.NewCommandForTest(t.Context(), "sh", "-c", "catttttt"),
 			[]string{"hello world !", "hello universe !"},
 			func(lines []string, err error) {
 				assert.Equal(t, []string{}, lines)
@@ -500,7 +500,7 @@ func TestTransform(t *testing.T) {
 				"seq": "seq 1 3",
 			}
 
-			buf, err := ghokin.ExportTransform(s, 2, aliases)
+			buf, err := ghokin.ExportTransform(t.Context(), s, 2, aliases)
 			assert.NoError(t, err)
 
 			b, e := os.ReadFile(scenario.expected)

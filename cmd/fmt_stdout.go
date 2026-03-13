@@ -14,9 +14,9 @@ func formatOnStdout(msgHandler messageHandler, cmd *cobra.Command, args []string
 	var output []byte
 	var err error
 	if len(args) == 0 {
-		output, err = getStdinManager().Transform(cmd.InOrStdin())
+		output, err = getStdinManager().Transform(cmd.Context(), cmd.InOrStdin())
 	} else {
-		output, err = getFileManager().Transform(args[0])
+		output, err = getFileManager().Transform(cmd.Context(), args[0])
 	}
 
 	if err != nil {
