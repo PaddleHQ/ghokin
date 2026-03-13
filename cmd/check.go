@@ -11,12 +11,12 @@ var checkCmd = &cobra.Command{
 	Run:   setupCmdFunc(check),
 }
 
-func check(msgHandler messageHandler, _ *cobra.Command, args []string) {
+func check(msgHandler messageHandler, cmd *cobra.Command, args []string) {
 	if len(args) != 1 {
 		msgHandler.errorFatalStr("you must provide a filename or a folder as argument")
 	}
 
-	if errs := getFileManager().Check(args[0], extensions); len(errs) > 0 {
+	if errs := getFileManager().Check(cmd.Context(), args[0], extensions); len(errs) > 0 {
 		for _, e := range errs {
 			msgHandler.error(e)
 		}

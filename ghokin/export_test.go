@@ -49,7 +49,7 @@ func SectionPrevious(s *section, excluded []gherkin.TokenType) *section {
 	return s.previous(excluded)
 }
 
-// NewCommandForTest creates exec.Cmd for testing (noctx-safe).
-func NewCommandForTest(name string, args ...string) *exec.Cmd {
-	return exec.CommandContext(context.Background(), name, args...)
+// NewCommandForTest creates exec.Cmd for testing.
+func NewCommandForTest(ctx context.Context, name string, args ...string) *exec.Cmd {
+	return exec.CommandContext(ctx, name, args...)
 }
