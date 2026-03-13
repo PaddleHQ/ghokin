@@ -3,12 +3,13 @@ package ghokin
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	jsonct "github.com/PaddleHQ/ghokin/v4/ghokin/internal/contenttypes/json"
 
 	"github.com/cucumber/gherkin/go/v28"
 )
@@ -83,41 +84,67 @@ func processAccumulator(
 	return values, newAccumulator, skip
 }
 
-func isJSONDocString(sec *section) bool {
-	return sec.kind == gherkin.TokenTypeDocStringSeparator &&
-		len(sec.values) == 1 && sec.values[0].Text == "json"
+// Formatter formats the raw content of a doc string for a specific content type.
+type Formatter interface {
+	// Format takes raw doc string content and returns the formatted output.
+	Format(content string) (string, error)
 }
 
-func formatJSONDocString(
+// contentTypeFormatters maps doc string content type names to their formatters.
+var contentTypeFormatters = map[string]Formatter{}
+
+func init() {
+	jf := jsonct.NewFormatter()
+	for _, contentType := range jf.SupportedTypes() {
+		contentTypeFormatters[contentType] = jf
+	}
+}
+
+func getDocStringContentType(sec *section) (string, bool) {
+	if sec.kind != gherkin.TokenTypeDocStringSeparator || len(sec.values) != 1 {
+		return "", false
+	}
+
+	name := sec.values[0].Text
+	if _, ok := contentTypeFormatters[name]; ok {
+		return name, true
+	}
+
+	return "", false
+}
+
+func formatDocString(
 	sec *section,
 	paddings map[gherkin.TokenType]int,
+	contentType string,
+	formatter Formatter,
 ) (*section, []string, error) {
 	document := make([]string, 0)
 	document = append(
 		document,
 		trimExtraTrailingSpace(indentStrings(
-			paddings[gherkin.TokenTypeOther], []string{`"""json`},
+			paddings[gherkin.TokenTypeOther], []string{`"""` + contentType},
 		))...,
 	)
 
-	var jsonLines strings.Builder
+	var content strings.Builder
 	for sec.nex.kind != gherkin.TokenTypeDocStringSeparator {
 		sec = sec.nex
 		for _, value := range sec.values {
-			jsonLines.WriteString(value.Text)
+			content.WriteString(value.Text)
 		}
 	}
 
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(jsonLines.String()), "", "  "); err != nil {
-		return sec, nil, fmt.Errorf("failed to format json: %w", err)
+	formatted, err := formatter.Format(content.String())
+	if err != nil {
+		return sec, nil, err
 	}
 
-	jsonFormatted := strings.Split(prettyJSON.String(), "\n")
+	lines := strings.Split(formatted, "\n")
 	document = append(
 		document,
 		trimExtraTrailingSpace(indentStrings(
-			paddings[gherkin.TokenTypeOther], jsonFormatted,
+			paddings[gherkin.TokenTypeOther], lines,
 		))...,
 	)
 
@@ -168,8 +195,8 @@ func transform(ctx context.Context, sec *section, indent int, aliases aliases) (
 			continue
 		}
 
-		if isJSONDocString(sec) {
-			newSec, doc, err := formatJSONDocString(sec, paddings)
+		if contentType, ok := getDocStringContentType(sec); ok {
+			newSec, doc, err := formatDocString(sec, paddings, contentType, contentTypeFormatters[contentType])
 			if err != nil {
 				return []byte{}, err
 			}
