@@ -29,10 +29,9 @@ func TestFormatAndReplace(t *testing.T) {
 		&stderr,
 	)
 
-	assert.NoError(t, os.RemoveAll("/tmp/ghokin"))
-	assert.NoError(t, os.MkdirAll("/tmp/ghokin", 0o777))
-	assert.NoError(t, os.WriteFile("/tmp/ghokin/file1.feature", []byte("Feature: Test\nTest\nScenario: Scenario1\nGiven a test\n"), 0o755))
-	assert.NoError(t, os.WriteFile("/tmp/ghokin/file2.feature", []byte("Feature: Test\nTest\nScenario: Scenario2\nGiven a test\n"), 0o755))
+	tmpDir := t.TempDir()
+	assert.NoError(t, os.WriteFile(tmpDir+"/file1.feature", []byte("Feature: Test\nTest\nScenario: Scenario1\nGiven a test\n"), 0o755))
+	assert.NoError(t, os.WriteFile(tmpDir+"/file2.feature", []byte("Feature: Test\nTest\nScenario: Scenario2\nGiven a test\n"), 0o755))
 
 	w.Add(1)
 
@@ -47,15 +46,15 @@ func TestFormatAndReplace(t *testing.T) {
 
 		c := &cobra.Command{}
 
-		cmd.TestFormatAndReplace(msgHandler, c, []string{"/tmp/ghokin"})
+		cmd.TestFormatAndReplace(msgHandler, c, []string{tmpDir})
 	}()
 
 	w.Wait()
 
 	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
-	assert.Equal(t, `"/tmp/ghokin" formatted`+"\n", stdout.String())
+	assert.Equal(t, `"`+tmpDir+`" formatted`+"\n", stdout.String())
 
-	b1, err := os.ReadFile("/tmp/ghokin/file1.feature")
+	b1, err := os.ReadFile(tmpDir + "/file1.feature")
 
 	assert.NoError(t, err)
 
@@ -67,7 +66,7 @@ func TestFormatAndReplace(t *testing.T) {
 
 	assert.Equal(t, b1Expected, string(b1))
 
-	b2, err := os.ReadFile("/tmp/ghokin/file2.feature")
+	b2, err := os.ReadFile(tmpDir + "/file2.feature")
 
 	assert.NoError(t, err)
 

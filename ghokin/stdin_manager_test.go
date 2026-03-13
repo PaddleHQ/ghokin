@@ -98,7 +98,7 @@ func TestStdinManagerTransform(t *testing.T) {
 		t.Run(scenario.name, func(t *testing.T) {
 			t.Parallel()
 			stdinManager, reader := scenario.setup()
-			scenario.test(stdinManager.Transform(reader))
+			scenario.test(stdinManager.Transform(t.Context(), reader))
 		})
 	}
 }
