@@ -1,0 +1,12 @@
+[*]
+charset = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_style = unset
+indent_size = unset
+
+[file1-with-cr.feature]
+end_of_line = cr
+
+[file1-with-crlf.feature]
+end_of_line = crlf
