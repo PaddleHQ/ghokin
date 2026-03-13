@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -205,7 +204,7 @@ func transform(ctx context.Context, sec *section, indent int, aliases aliases) (
 		document = append(document, trimExtraTrailingSpace(indentStrings(padding, lines))...)
 	}
 
-	return []byte(strings.Join(document, "\n") + "\n"), nil
+	return []byte(fmt.Sprintf("%s\n", strings.Join(document, "\n"))), nil
 }
 
 func applySectionKind(
@@ -427,7 +426,7 @@ func extractTableRowsAndComments(tokens []*gherkin.Token) []string {
 		} else {
 			for i, str := range tableElement.content {
 				inputs = append(inputs, str)
-				fmtDirective += "| %-" + strconv.Itoa(lengths[i]) + "s "
+				fmtDirective += fmt.Sprintf("| %%-%ds ", lengths[i])
 			}
 			fmtDirective += "|"
 		}

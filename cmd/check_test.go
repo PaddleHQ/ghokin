@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -52,7 +53,7 @@ func TestCheck(t *testing.T) {
 	w.Wait()
 
 	assert.Equal(t, 0, code, "Must exit with errors (exit 0)")
-	assert.Equal(t, `"`+tmpDir+`" is well formatted`+"\n", stdout.String())
+	assert.Equal(t, fmt.Sprintf("%q is well formatted\n", tmpDir), stdout.String())
 }
 
 func TestCheckErrors(t *testing.T) {
