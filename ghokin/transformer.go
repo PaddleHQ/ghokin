@@ -123,7 +123,7 @@ func restoreTemplateVars(s string, placeholders []templatePlaceholder) string {
 		placeholder := fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, i)
 		var replacement string
 		if p.quoted {
-			replacement = fmt.Sprintf(`"%s"`, p.original)
+			replacement = fmt.Sprintf("%q", p.original)
 		} else {
 			replacement = p.original
 		}
