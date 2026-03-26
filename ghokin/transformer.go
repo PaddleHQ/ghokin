@@ -88,6 +88,50 @@ func isJSONDocString(sec *section) bool {
 		len(sec.values) == 1 && sec.values[0].Text == "json"
 }
 
+// templateVarRegexp matches {{ ... }} template variables used in BDD feature files,
+// optionally consuming surrounding double-quotes to avoid producing invalid
+// double-quoted strings (e.g. `"{{ name }}"` → `"__GHOKIN_TPL_0__"`).
+var templateVarRegexp = regexp.MustCompile(`"?\{\{[^}]*\}\}"?`)
+
+type templatePlaceholder struct {
+	original string
+	quoted   bool
+}
+
+// replaceTemplateVars replaces {{ ... }} template variables with JSON-safe
+// placeholder strings so that json.Indent can parse the content. It returns the
+// modified string and an ordered slice of the original template expressions.
+func replaceTemplateVars(s string) (string, []templatePlaceholder) {
+	var placeholders []templatePlaceholder
+	replaced := templateVarRegexp.ReplaceAllStringFunc(s, func(match string) string {
+		idx := len(placeholders)
+		quoted := strings.HasPrefix(match, `"`) && strings.HasSuffix(match, `"`)
+		original := match
+		if quoted {
+			original = match[1 : len(match)-1]
+		}
+		placeholders = append(placeholders, templatePlaceholder{original: original, quoted: quoted})
+		return fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, idx)
+	})
+	return replaced, placeholders
+}
+
+// restoreTemplateVars reverses the placeholder substitution performed by
+// replaceTemplateVars, putting the original {{ ... }} expressions back.
+func restoreTemplateVars(s string, placeholders []templatePlaceholder) string {
+	for i, p := range placeholders {
+		placeholder := fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, i)
+		var replacement string
+		if p.quoted {
+			replacement = fmt.Sprintf(`"%s"`, p.original)
+		} else {
+			replacement = p.original
+		}
+		s = strings.Replace(s, placeholder, replacement, 1)
+	}
+	return s
+}
+
 func formatJSONDocString(
 	sec *section,
 	paddings map[gherkin.TokenType]int,
@@ -108,12 +152,16 @@ func formatJSONDocString(
 		}
 	}
 
+	rawJSON := jsonLines.String()
+	sanitized, placeholders := replaceTemplateVars(rawJSON)
+
 	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(jsonLines.String()), "", "  "); err != nil {
+	if err := json.Indent(&prettyJSON, []byte(sanitized), "", "  "); err != nil {
 		return sec, nil, fmt.Errorf("failed to format json: %w", err)
 	}
 
-	jsonFormatted := strings.Split(prettyJSON.String(), "\n")
+	restored := restoreTemplateVars(prettyJSON.String(), placeholders)
+	jsonFormatted := strings.Split(restored, "\n")
 	document = append(
 		document,
 		trimExtraTrailingSpace(indentStrings(
