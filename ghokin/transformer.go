@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/cucumber/gherkin/go/v28"
+	gherkin "github.com/cucumber/gherkin/go/v28"
 )
 
 // CmdError is thrown when an error occurred when calling
@@ -88,46 +88,78 @@ func isJSONDocString(sec *section) bool {
 		len(sec.values) == 1 && sec.values[0].Text == "json"
 }
 
-// templateVarRegexp matches {{ ... }} template variables used in BDD feature files,
-// optionally consuming surrounding double-quotes to avoid producing invalid
-// double-quoted strings (e.g. `"{{ name }}"` → `"__GHOKIN_TPL_0__"`).
-var templateVarRegexp = regexp.MustCompile(`"?\{\{[^}]*\}\}"?`)
+var templateVarRegexp = regexp.MustCompile(`\{\{[^}]*\}\}`)
 
 type templatePlaceholder struct {
 	original string
-	quoted   bool
+	inString bool
+}
+
+// isInsideJSONString reports whether position pos in s falls inside a
+// JSON string literal by counting unescaped double-quote characters
+// before that position.
+func isInsideJSONString(s string, pos int) bool {
+	count := 0
+	for i := 0; i < pos; i++ {
+		if s[i] != '"' {
+			continue
+		}
+		backslashes := 0
+		for j := i - 1; j >= 0 && s[j] == '\\'; j-- {
+			backslashes++
+		}
+		if backslashes%2 == 0 {
+			count++
+		}
+	}
+	return count%2 == 1
 }
 
 // replaceTemplateVars replaces {{ ... }} template variables with JSON-safe
-// placeholder strings so that json.Indent can parse the content. It returns the
-// modified string and an ordered slice of the original template expressions.
+// placeholder strings so that json.Indent can parse the content. Templates
+// inside a JSON string get an unquoted placeholder (preserving the
+// surrounding string), while bare templates outside any string get a quoted
+// placeholder to form a valid JSON value.
 func replaceTemplateVars(s string) (string, []templatePlaceholder) {
+	matches := templateVarRegexp.FindAllStringIndex(s, -1)
+	if len(matches) == 0 {
+		return s, nil
+	}
+
 	var placeholders []templatePlaceholder
-	replaced := templateVarRegexp.ReplaceAllStringFunc(s, func(match string) string {
+	var result strings.Builder
+	lastEnd := 0
+
+	for _, loc := range matches {
+		start, end := loc[0], loc[1]
+		tpl := s[start:end]
 		idx := len(placeholders)
-		quoted := strings.HasPrefix(match, `"`) && strings.HasSuffix(match, `"`)
-		original := match
-		if quoted {
-			original = match[1 : len(match)-1]
+
+		result.WriteString(s[lastEnd:start])
+
+		if isInsideJSONString(s, start) {
+			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: true})
+			result.WriteString(fmt.Sprintf(`__GHOKIN_TPL_%d__`, idx))
+		} else {
+			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: false})
+			result.WriteString(fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, idx))
 		}
-		placeholders = append(placeholders, templatePlaceholder{original: original, quoted: quoted})
-		return fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, idx)
-	})
-	return replaced, placeholders
+		lastEnd = end
+	}
+
+	result.WriteString(s[lastEnd:])
+	return result.String(), placeholders
 }
 
 // restoreTemplateVars reverses the placeholder substitution performed by
 // replaceTemplateVars, putting the original {{ ... }} expressions back.
 func restoreTemplateVars(s string, placeholders []templatePlaceholder) string {
 	for i, p := range placeholders {
-		placeholder := fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, i)
-		var replacement string
-		if p.quoted {
-			replacement = fmt.Sprintf("%q", p.original)
+		if p.inString {
+			s = strings.Replace(s, fmt.Sprintf(`__GHOKIN_TPL_%d__`, i), p.original, 1)
 		} else {
-			replacement = p.original
+			s = strings.Replace(s, fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, i), p.original, 1)
 		}
-		s = strings.Replace(s, placeholder, replacement, 1)
 	}
 	return s
 }

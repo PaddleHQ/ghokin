@@ -429,6 +429,10 @@ func TestTransform(t *testing.T) {
 			"fixtures/json-template-vars.input.feature",
 			"fixtures/json-template-vars.expected.feature",
 		},
+		{
+			"fixtures/json-embedded-template-vars.input.feature",
+			"fixtures/json-embedded-template-vars.expected.feature",
+		},
 
 		{
 			"fixtures/cmd.input.feature",
