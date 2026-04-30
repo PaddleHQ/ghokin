@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -184,7 +184,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -230,7 +230,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -270,7 +270,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -322,7 +322,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -381,7 +381,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -400,7 +400,7 @@ jobs:
 
       - name: "🔑 Generate GitHub App Token"
         id: generate-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         with:
           app-id: 1045853
           private-key: ${{ secrets.AUTO_APPROVER_PRIVATE_KEY }}
@@ -413,6 +413,39 @@ jobs:
 
       - name: "🔀 Auto Merge PR"
         if: steps.build_config.outputs['mergeBotEnabled'] == 'true'
-        run: gh pr merge --admin --squash "${{ github.event.inputs.pr_number }}"
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          echo "🔀 Attempting direct merge..."
+          if MERGE_OUTPUT=$(gh pr merge --admin --squash "${{ github.event.inputs.pr_number }}" 2>&1); then
+            echo "✅ PR merged successfully"
+          elif echo "$MERGE_OUTPUT" | grep -q "merge queue"; then
+            echo "🚂 Merge queue required, adding PR to queue..."
+            gh pr merge --squash "${{ github.event.inputs.pr_number }}"
+          else
+            echo "❌ Merge failed:"
+            echo "$MERGE_OUTPUT"
+            exit 1
+          fi
+
+  otel_cicd_export:
+    name: OpenTelemetry Export Trace
+    if: always()
+    needs: [pr_info, wait_for_ready, check_dependabot_changes, check_library_template_changes, check_paddle_config_changes, check_renovate_changes, automerge]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        with:
+          egress-policy: audit
+
+      - name: Export workflow trace
+        uses: corentinmusard/otel-cicd-action@f2d88ecf54d9dd3e01ea95e25f93603212ee93d3 # v4.0.1
+        continue-on-error: true
+        with:
+          otlpEndpoint: grpc://api.honeycomb.io:443/
+          otlpHeaders: "x-honeycomb-team=${{ secrets.HONEYCOMB_GHA_SECRET }},x-honeycomb-dataset=${{ vars.HONEYCOMB_GHA_DATASET }}"
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
