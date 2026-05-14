@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/cucumber/gherkin/go/v28"
+	gherkin "github.com/cucumber/gherkin/go/v28"
 )
 
 // CmdError is thrown when an error occurred when calling
@@ -88,6 +88,82 @@ func isJSONDocString(sec *section) bool {
 		len(sec.values) == 1 && sec.values[0].Text == "json"
 }
 
+var templateVarRegexp = regexp.MustCompile(`\{\{[^}]*\}\}`)
+
+type templatePlaceholder struct {
+	original string
+	inString bool
+}
+
+// isInsideJSONString reports whether position pos in s falls inside a
+// JSON string literal by counting unescaped double-quote characters
+// before that position.
+func isInsideJSONString(s string, pos int) bool {
+	count := 0
+	for i := 0; i < pos; i++ {
+		if s[i] != '"' {
+			continue
+		}
+		backslashes := 0
+		for j := i - 1; j >= 0 && s[j] == '\\'; j-- {
+			backslashes++
+		}
+		if backslashes%2 == 0 {
+			count++
+		}
+	}
+	return count%2 == 1
+}
+
+// replaceTemplateVars replaces {{ ... }} template variables with JSON-safe
+// placeholder strings so that json.Indent can parse the content. Templates
+// inside a JSON string get an unquoted placeholder (preserving the
+// surrounding string), while bare templates outside any string get a quoted
+// placeholder to form a valid JSON value.
+func replaceTemplateVars(s string) (string, []templatePlaceholder) {
+	matches := templateVarRegexp.FindAllStringIndex(s, -1)
+	if len(matches) == 0 {
+		return s, nil
+	}
+
+	var placeholders []templatePlaceholder
+	var result strings.Builder
+	lastEnd := 0
+
+	for _, loc := range matches {
+		start, end := loc[0], loc[1]
+		tpl := s[start:end]
+		idx := len(placeholders)
+
+		result.WriteString(s[lastEnd:start])
+
+		if isInsideJSONString(s, start) {
+			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: true})
+			result.WriteString(fmt.Sprintf(`__GHOKIN_TPL_%d__`, idx))
+		} else {
+			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: false})
+			result.WriteString(fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, idx))
+		}
+		lastEnd = end
+	}
+
+	result.WriteString(s[lastEnd:])
+	return result.String(), placeholders
+}
+
+// restoreTemplateVars reverses the placeholder substitution performed by
+// replaceTemplateVars, putting the original {{ ... }} expressions back.
+func restoreTemplateVars(s string, placeholders []templatePlaceholder) string {
+	for i, p := range placeholders {
+		if p.inString {
+			s = strings.Replace(s, fmt.Sprintf(`__GHOKIN_TPL_%d__`, i), p.original, 1)
+		} else {
+			s = strings.Replace(s, fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, i), p.original, 1)
+		}
+	}
+	return s
+}
+
 func formatJSONDocString(
 	sec *section,
 	paddings map[gherkin.TokenType]int,
@@ -108,12 +184,16 @@ func formatJSONDocString(
 		}
 	}
 
+	rawJSON := jsonLines.String()
+	sanitized, placeholders := replaceTemplateVars(rawJSON)
+
 	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(jsonLines.String()), "", "  "); err != nil {
+	if err := json.Indent(&prettyJSON, []byte(sanitized), "", "  "); err != nil {
 		return sec, nil, fmt.Errorf("failed to format json: %w", err)
 	}
 
-	jsonFormatted := strings.Split(prettyJSON.String(), "\n")
+	restored := restoreTemplateVars(prettyJSON.String(), placeholders)
+	jsonFormatted := strings.Split(restored, "\n")
 	document = append(
 		document,
 		trimExtraTrailingSpace(indentStrings(
