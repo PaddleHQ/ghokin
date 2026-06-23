@@ -1,11 +1,11 @@
-Feature: aäáeéoóouüußä
-      In order to test something
-      As a felhasználó
-      I want to be able to do something
+Feature: aÃ¤Ã¡eÃ©oÃ³ouÃ¼uÃŸÃ¤
+  In order to test something
+  As a felhasznÃ¡lÃ³
+  I want to be able to do something
 
   Scenario: Test
     Given those values
-      | value                       |
-      | aäáeéoóouüußä               |
-    When I do 'aäáeéoóouüußä'
-    Then aäáeéoóouüußä happens
+      | value         |
+      | aÃ¤Ã¡eÃ©oÃ³ouÃ¼uÃŸÃ¤ |
+    When I do 'aÃ¤Ã¡eÃ©oÃ³ouÃ¼uÃŸÃ¤'
+    Then aÃ¤Ã¡eÃ©oÃ³ouÃ¼uÃŸÃ¤ happens
