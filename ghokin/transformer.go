@@ -88,7 +88,9 @@ func isJSONDocString(sec *section) bool {
 		len(sec.values) == 1 && sec.values[0].Text == "json"
 }
 
-var templateVarRegexp = regexp.MustCompile(`\{\{[^}]*\}\}`)
+// templateVarRegexp matches {{ ... }} go-bdd template variables and <name> Gherkin
+// Scenario Outline placeholders inside JSON docstrings.
+var templateVarRegexp = regexp.MustCompile(`\{\{[^}]*\}\}|<[^>]+>`)
 
 type templatePlaceholder struct {
 	original string
@@ -139,10 +141,10 @@ func replaceTemplateVars(s string) (string, []templatePlaceholder) {
 
 		if isInsideJSONString(s, start) {
 			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: true})
-			result.WriteString(fmt.Sprintf(`__GHOKIN_TPL_%d__`, idx))
+			fmt.Fprintf(&result, `__GHOKIN_TPL_%d__`, idx)
 		} else {
 			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: false})
-			result.WriteString(fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, idx))
+			fmt.Fprintf(&result, `"__GHOKIN_TPL_%d__"`, idx)
 		}
 		lastEnd = end
 	}
