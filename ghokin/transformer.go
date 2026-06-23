@@ -141,10 +141,10 @@ func replaceTemplateVars(s string) (string, []templatePlaceholder) {
 
 		if isInsideJSONString(s, start) {
 			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: true})
-			fmt.Fprintf(&result, `__GHOKIN_TPL_%d__`, idx)
+			result.WriteString(fmt.Sprintf(`__GHOKIN_TPL_%d__`, idx))
 		} else {
 			placeholders = append(placeholders, templatePlaceholder{original: tpl, inString: false})
-			fmt.Fprintf(&result, `"__GHOKIN_TPL_%d__"`, idx)
+			result.WriteString(fmt.Sprintf(`"__GHOKIN_TPL_%d__"`, idx))
 		}
 		lastEnd = end
 	}
