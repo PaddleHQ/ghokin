@@ -88,7 +88,9 @@ func isJSONDocString(sec *section) bool {
 		len(sec.values) == 1 && sec.values[0].Text == "json"
 }
 
-var templateVarRegexp = regexp.MustCompile(`\{\{[^}]*\}\}`)
+// templateVarRegexp matches {{ ... }} go-bdd template variables and <name> Gherkin
+// Scenario Outline placeholders inside JSON docstrings.
+var templateVarRegexp = regexp.MustCompile(`\{\{[^}]*\}\}|<[^>]+>`)
 
 type templatePlaceholder struct {
 	original string
