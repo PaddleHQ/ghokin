@@ -437,6 +437,14 @@ func TestTransform(t *testing.T) {
 			"fixtures/json-outline-vars.input.feature",
 			"fixtures/json-outline-vars.expected.feature",
 		},
+		{
+			"fixtures/json-rule.input.feature",
+			"fixtures/json-rule.expected.feature",
+		},
+		{
+			"fixtures/json-rule.expected.feature",
+			"fixtures/json-rule.expected.feature",
+		},
 
 		{
 			"fixtures/cmd.input.feature",
@@ -477,6 +485,14 @@ func TestTransform(t *testing.T) {
 		{
 			"fixtures/rule.feature",
 			"fixtures/rule.feature",
+		},
+		{
+			"fixtures/rule-comments.input.feature",
+			"fixtures/rule-comments.expected.feature",
+		},
+		{
+			"fixtures/rule-comments.expected.feature",
+			"fixtures/rule-comments.expected.feature",
 		},
 		{
 			"fixtures/non-ascii-characters-formatting.feature",

@@ -169,13 +169,13 @@ func restoreTemplateVars(s string, placeholders []templatePlaceholder) string {
 func formatJSONDocString(
 	sec *section,
 	paddings map[gherkin.TokenType]int,
+	optionalRulePadding int,
 ) (*section, []string, error) {
+	padding := paddings[gherkin.TokenTypeOther] + optionalRulePadding
 	document := make([]string, 0)
 	document = append(
 		document,
-		trimExtraTrailingSpace(indentStrings(
-			paddings[gherkin.TokenTypeOther], []string{`"""json`},
-		))...,
+		trimExtraTrailingSpace(indentStrings(padding, []string{`"""json`}))...,
 	)
 
 	var jsonLines strings.Builder
@@ -198,9 +198,7 @@ func formatJSONDocString(
 	jsonFormatted := strings.Split(restored, "\n")
 	document = append(
 		document,
-		trimExtraTrailingSpace(indentStrings(
-			paddings[gherkin.TokenTypeOther], jsonFormatted,
-		))...,
+		trimExtraTrailingSpace(indentStrings(padding, jsonFormatted))...,
 	)
 
 	return sec, document, nil
@@ -210,6 +208,7 @@ func buildPaddings(indent int) map[gherkin.TokenType]int {
 	return map[gherkin.TokenType]int{
 		gherkin.TokenTypeFeatureLine:        0,
 		gherkin.TokenTypeBackgroundLine:     indent,
+		gherkin.TokenTypeRuleLine:           indent,
 		gherkin.TokenTypeScenarioLine:       indent,
 		gherkin.TokenTypeDocStringSeparator: 3 * indent,
 		gherkin.TokenTypeStepLine:           2 * indent,
@@ -251,7 +250,7 @@ func transform(ctx context.Context, sec *section, indent int, aliases aliases) (
 		}
 
 		if isJSONDocString(sec) {
-			newSec, doc, err := formatJSONDocString(sec, paddings)
+			newSec, doc, err := formatJSONDocString(sec, paddings, optionalRulePadding)
 			if err != nil {
 				return []byte{}, err
 			}
@@ -308,10 +307,10 @@ func applySectionKind(
 		padding = indent
 	case gherkin.TokenTypeComment, gherkin.TokenTypeLanguage:
 		cmd = extractCommand(ctx, sec.values, aliases)
-		padding = getTagOrCommentPadding(paddings, indent, sec)
+		padding = getTagOrCommentPadding(paddings, indent, optionalRulePadding, sec)
 		result = trimLinesSpace(lines)
 	case gherkin.TokenTypeTagLine:
-		padding = getTagOrCommentPadding(paddings, indent, sec)
+		padding = getTagOrCommentPadding(paddings, indent, optionalRulePadding, sec)
 	case gherkin.TokenTypeDocStringSeparator:
 		result = extractKeyword(sec.values)
 	case gherkin.TokenTypeOther:
@@ -331,6 +330,7 @@ func applySectionKind(
 func getTagOrCommentPadding(
 	paddings map[gherkin.TokenType]int,
 	indent int,
+	optionalRulePadding int,
 	sec *section,
 ) int {
 	var kind gherkin.TokenType
@@ -351,9 +351,13 @@ func getTagOrCommentPadding(
 	}
 	// indent the last comment line at the same level than scenario and background.
 	if sec.next([]gherkin.TokenType{gherkin.TokenTypeEmpty}) == nil {
-		return indent
+		return indent + optionalRulePadding
 	}
-	return paddings[kind]
+	// A Rule line sits at the same level whether or not a previous Rule set the padding.
+	if kind == gherkin.TokenTypeRuleLine {
+		return paddings[kind]
+	}
+	return paddings[kind] + optionalRulePadding
 }
 
 func computeCommand(
