@@ -1,6 +1,6 @@
 module github.com/PaddleHQ/ghokin/v4
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/cucumber/gherkin/go/v28 v28.0.0
